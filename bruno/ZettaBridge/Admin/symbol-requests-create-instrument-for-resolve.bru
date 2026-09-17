@@ -1,0 +1,51 @@
+meta {
+  name: POST Create Instrument (For Symbol Request)
+  type: http
+  seq: 49
+}
+
+post {
+  url: {{baseUrl}}/v1/admin/instruments
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "market_profile_code": "indian_equity",
+    "exchange": "NSE",
+    "symbol": "BRUNOSYM1",
+    "name": "Bruno Symbol Request Test",
+    "instrument_type": "EQUITY",
+    "tick_size": 0.05,
+    "lot_size": 1
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("symbolRequestInstrumentId", res.getBody().data.id);
+    console.log("symbolRequestInstrumentId saved: " + res.getBody().data.id);
+  }
+}
+
+docs {
+  Creating an instrument for the same profile+symbol as the (now accepted)
+  symbolRequestId1 auto-resolves it server-side — see
+  symbol-requests-verify-resolved.bru. This is the real end-to-end
+  "Accept -> pre-filled form -> Save -> resolved" flow, minus the UI itself.
+}
+
+tests {
+  test("Status 201", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+}

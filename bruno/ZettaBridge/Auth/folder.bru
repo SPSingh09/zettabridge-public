@@ -1,0 +1,12 @@
+meta {
+  name: Auth
+  seq: 2
+}
+
+docs {
+  - POST /v1/auth/register
+  - POST /v1/auth/login → saves {{token}} (403 if email not verified when EMAIL_VERIFICATION_REQUIRED=true)
+  - GET /v1/auth/verify-email?token=… (from verification email / server log)
+  - POST /v1/auth/resend-verification
+  - POST /v1/auth/logout (Bearer {{token}} — revokes JWT)
+}

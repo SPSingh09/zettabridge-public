@@ -1,0 +1,26 @@
+meta {
+  name: GET Webhook PnL - free tier 403
+  type: http
+  seq: 25
+}
+
+get {
+  url: {{baseUrl}}/v1/webhooks/{{webhookId}}/pnl
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Free plan cannot read trade audit or P&L (same gate as GET /trades).
+  Use a free-tier {{token}} after creating a webhook.
+}
+
+tests {
+  test("Free tier denied", function() {
+    expect(res.getStatus()).to.equal(403);
+  });
+}

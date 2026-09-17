@@ -1,0 +1,45 @@
+meta {
+  name: PUT Update Webhook
+  type: http
+  seq: 8
+}
+
+put {
+  url: {{baseUrl}}/v1/webhooks/{{webhookId}}
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "label": "EURUSD Scalper (updated)",
+    "lot_size": 0.02,
+    "allowed_actions": ["BUY", "SELL", "CLOSE"]
+  }
+}
+
+docs {
+  Updates mutable webhook fields. Immutable via PUT: `id`, `user_id`, `token`, `status`, `created_at`.
+  Use **POST rotate-token** for token rotation; **pause/resume** for status.
+
+  Phase-2 guard fields (`dedup_window_sec`, etc.) require **paper** plan or higher on live webhooks.
+  Paper-destination webhooks are never plan-gated — see Paper Trading/update-webhook-guards.
+}
+
+tests {
+  test("Webhook updated", function() {
+    expect(res.getStatus()).to.equal(200);
+    const data = res.getBody().data;
+    expect(data.label).to.equal("EURUSD Scalper (updated)");
+    expect(data.lot_size).to.equal(0.02);
+    expect(data.token).to.be.a("string");
+  });
+}

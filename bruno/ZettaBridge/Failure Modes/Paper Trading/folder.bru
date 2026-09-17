@@ -1,0 +1,15 @@
+meta {
+  name: Paper Trading
+  seq: 6
+}
+
+docs {
+  Failure modes for /v1/paper-accounts/* and paper-destination /v1/webhooks/*.
+  Covers: account limit (403), delete while in use (409), webhook with
+  both/neither destination (400), signal missing price (async rejection),
+  invalid `type` (400, synchronous), PRICE_UPDATE wrong secret (401).
+
+  Prerequisite: run Paper Trading → create-account → create-webhook first
+  (in that order) so `paperAccountId`/`paperWebhookId`/`paperWebhookToken` are
+  set and the account/webhook actually exist for these negative tests to hit.
+}

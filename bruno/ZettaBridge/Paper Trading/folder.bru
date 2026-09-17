@@ -1,0 +1,84 @@
+meta {
+  name: Paper Trading
+  seq: 6
+}
+
+docs {
+  Broker-free Paper Trading Engine (see DEMO_EXECUTION_PLAN.md Phases 0-7):
+  - GET    /v1/paper-accounts
+  - POST   /v1/paper-accounts
+  - PATCH  /v1/paper-accounts/:id
+  - PUT    /v1/paper-accounts/:id/pause | /resume | /reset
+  - GET    /v1/paper-accounts/:id
+  - DELETE /v1/paper-accounts/:id
+  - GET    /v1/paper-accounts/:id/positions
+  - POST   /v1/paper-accounts/:id/positions/close
+  - GET    /v1/paper-accounts/:id/orders
+  - GET    /v1/paper-accounts/:id/pnl
+  - GET    /v1/paper-accounts/:id/snapshots
+  - GET    /v1/market-profiles
+
+  **Requires an admin token in this run** (Phase 7's market-hours toggle is
+  admin-only — see disable-market-hours-for-testing.bru, seq 0). Chain
+  Admin/login.bru before this folder in the same invocation:
+    npx @usebruno/cli run "Admin/login.bru" -r "Auth/login.bru" -r "Paper Trading" --env local
+
+  Webhooks route to a paper account via `paper_account_id` instead of `broker_cred_id`
+  (exactly one of the two is required — see Webhooks folder's `create-paper.bru`).
+
+  **Key facts for testing:**
+  - Plan caps (accounts / paper webhooks / monthly trades): see **Plans** folder and /v1/me.
+    Free: 1 account, 1 paper webhook, 10 trades/month. Paper tier: no live brokers.
+  - Webhook guards on paper destinations are not plan-gated (update-webhook-guards proves this).
+  - **Paper-destination webhooks use a distinct typed payload** — a required `type` field of
+    either `"ORDER_SIGNAL"` or `"PRICE_UPDATE"` (see `internal/store.PaperSignalPayload`).
+    This is *not* the same shape as live trading's `SignalPayload` (which has no `type` field
+    and is unaffected by any of this).
+  - `ORDER_SIGNAL` (`ingest-buy.bru`, `ingest-sell-partial.bru`, `ingest-close.bru`): fields
+    are `comment`, `type`, `symbol`, `action` (BUY|SELL|CLOSE), `quantity`, `order_type`,
+    `price`. Field is `quantity`, not `lot`. LIMIT orders need `price`. MARKET orders can fill
+    from live quotes when Admin has FYERS market data connected; otherwise `price` is required.
+    for `symbol` in one shot (side inferred from the position's sign). `CLOSE` needs no `quantity`.
+  - `PRICE_UPDATE` (`ingest-price-update.bru`): fields are `comment`, `type`, `symbol`,
+    `price` only. Synchronous (returns `200`, not `202` — never touches the queue), marks
+    `last_price`/`unrealized_pnl` on any open position for `symbol`, with no order, trade, or
+    cash-balance effect. A `200 {"marked": false}` (not an error) when there's no open
+    position for that symbol yet.
+  - `comment` is checked against the webhook's `required_comment` — same field name and
+    mechanism as live trading — wrong or missing `comment` is a `401`.
+  - `symbol` should be sent explicitly on every signal so it applies to that symbol's
+    position specifically, not just whatever the webhook's default symbol happens to be.
+  - `ORDER_SIGNAL` always returns `202 {"queued": true}` immediately — the actual fill/reject
+    happens async in the queue worker. Check `GET .../orders` or `.../pnl` after a signal to
+    see the outcome.
+  - **Phase 6 background job** (`internal/marketdata.SnapshotJob`) sweeps every account with
+    an open position on a fixed interval (`MARKET_DATA_SNAPSHOT_INTERVAL_SEC`, default 45s),
+    refreshes last_price/unrealized_pnl via whichever `MARKET_DATA_PROVIDER` is configured
+    (default `signal` — a deliberate no-op; real feeds like FYERS plug in behind the same
+    `marketdata.Provider` interface later), and writes one row to
+    `/v1/paper-accounts/:id/snapshots` — see snapshots.bru. This doesn't change any of the
+    numbers above; it's a separate equity/P&L history, not a new pricing mechanism.
+  - **Phase 7 order validation** — `ORDER_SIGNAL`s are now also checked against the
+    `instruments` symbol master (unknown/inactive symbol → rejected), tick size (price must
+    be a multiple), and lot size (quantity must be a multiple, except `CLOSE` — its quantity
+    is engine-computed). Market-hours enforcement (admin-configurable, on by default) rejects
+    orders outside the account's `market_profile`'s trading hours with "outside trading hours
+    for ..." — see disable-market-hours-for-testing.bru, which this folder runs first so
+    ingest-buy/ingest-sell-partial fill regardless of real-world time.
+  - `POST /v1/paper-accounts` now also accepts `market_profile` (defaults to `indian_equity`
+    if omitted) — validated against active `market_profiles` (Admin folder has the CRUD).
+  - **`POST /v1/paper-accounts/:id/positions/close`** (`{"symbol": "..."}`) — the dashboard's
+    "Close" button on the Positions card. Synchronous (no webhook/queue involved, no
+    `webhook_id` on the resulting `paper_orders` row), closes at the position's `last_price`
+    (there is no live price feed, so this is exactly the mark a `PRICE_UPDATE` or the entry
+    fill itself last set — not fetched fresh). Side/quantity are computed by the paper engine
+    itself from the existing position, same as a `CLOSE` `ORDER_SIGNAL`; the only required
+    input is `symbol`. 409s if there's no open position, the symbol has no known price yet,
+    or it's outside the market profile's trading hours — see close-position-*.bru.
+
+  **Quick-start flow:** disable-market-hours-for-testing → create-account → create-webhook →
+  update-webhook-guards → ingest-buy → ingest-sell-partial → ingest-price-update →
+  ingest-close → positions → orders → pnl → snapshots → close-position-ingest-buy →
+  close-position-api → close-position-no-open-position → delete-webhook → delete-account →
+  enable-market-hours-after-testing
+}

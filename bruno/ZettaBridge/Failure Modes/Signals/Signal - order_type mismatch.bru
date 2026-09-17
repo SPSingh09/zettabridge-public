@@ -1,0 +1,46 @@
+meta {
+  name: Signal — order_type mismatch (403)
+  type: http
+  seq: 48
+}
+
+post {
+  url: {{baseUrl}}/v1/webhook/{{indianWebhookToken}}
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "action": "BUY",
+    "symbol": "RELIANCE",
+    "lot": 1,
+    "price": 2500,
+    "order_type": "LIMIT",
+    "comment": "my-secret-1"
+  }
+}
+
+docs {
+  Prerequisite: Webhooks → create-indian (`indianWebhookToken`, configured
+  `default_order_type: MARKET`).
+
+  A webhook only ever places the order type it's configured for — sending a
+  signal with a different `order_type` is rejected synchronously (not queued
+  then rejected async like most execution failures), since it's a
+  configuration mismatch caught at the HTTP gateway (guard.ValidateOrderType),
+  the same layer that checks `comment`/`allowed_actions`/trading hours.
+
+  Expected: 403, error message names both the requested and configured type.
+}
+
+tests {
+  test("Order type mismatch rejected", function() {
+    expect(res.getStatus()).to.equal(403);
+    expect(res.getBody().error).to.include("order_type");
+  });
+}

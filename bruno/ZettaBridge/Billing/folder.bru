@@ -1,0 +1,16 @@
+meta {
+  name: Billing
+  seq: 9
+}
+
+docs {
+  Stripe billing. Requires `BILLING_ENABLED=true` and Stripe price IDs on the server.
+
+  **Catalog:** GET plans — four tiers (free, paper, pro, pro_plus).
+  Pro Plus includes `multi_product_credentials: true`.
+
+  **Checkout:** checkout-paper | checkout-pro | checkout-pro-plus
+  Plan changes apply after Stripe webhook (`POST /v1/webhooks/stripe`).
+
+  Local default docker has billing disabled (503). Use docker-compose.billing.yml overlay.
+}

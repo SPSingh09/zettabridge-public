@@ -1,0 +1,55 @@
+# Render with deploy/scripts/monitoring-up.sh (envsubst).
+# Secrets: deploy/env/monitoring.env (never commit).
+
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: telegram-staging
+  group_by: ["alertname", "environment", "severity"]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  routes:
+    - matchers:
+        - environment="production"
+      receiver: telegram-oncall
+    - matchers:
+        - environment="staging"
+      receiver: telegram-staging
+
+receivers:
+  - name: telegram-staging
+    telegram_configs:
+      - bot_token: ${TELEGRAM_BOT_TOKEN}
+        chat_id: ${TELEGRAM_STAGING_CHAT_ID}
+        send_resolved: true
+        parse_mode: HTML
+        message: |
+          {{ range .Alerts }}
+          <b>{{ .Labels.alertname }}</b> ({{ .Labels.severity }})
+          env: {{ .Labels.environment }}
+          {{ .Annotations.summary }}
+          {{ .Annotations.description }}
+          {{ end }}
+
+  - name: telegram-oncall
+    telegram_configs:
+      - bot_token: ${TELEGRAM_BOT_TOKEN}
+        chat_id: ${TELEGRAM_ONCALL_CHAT_ID}
+        send_resolved: true
+        parse_mode: HTML
+        message: |
+          {{ range .Alerts }}
+          <b>{{ .Labels.alertname }}</b> ({{ .Labels.severity }})
+          env: {{ .Labels.environment }}
+          {{ .Annotations.summary }}
+          {{ .Annotations.description }}
+          {{ end }}
+
+inhibit_rules:
+  - source_matchers:
+      - severity="critical"
+    target_matchers:
+      - severity="warning"
+    equal: ["alertname", "environment"]

@@ -1,0 +1,27 @@
+meta {
+  name: Webhook Delete — 401 invalid JWT
+  type: http
+  seq: 4
+}
+
+delete {
+  url: {{baseUrl}}/v1/webhooks/{{webhookId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: invalid.expired.jwt.token
+}
+
+docs {
+  Prerequisite: set {{webhookId}} via Webhooks > Create Webhook.
+  Uses a deliberately invalid Bearer token (simulates expired/corrupt JWT).
+  Expected: 401 { "error": "invalid or missing token" }
+}
+
+tests {
+  test("Invalid JWT returns 401", function() {
+    expect(res.getStatus()).to.equal(401);
+  });
+}

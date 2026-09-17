@@ -1,0 +1,31 @@
+meta {
+  name: GET List Platform Invites
+  type: http
+  seq: 31
+}
+
+get {
+  url: {{baseUrl}}/v1/admin/invites
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+docs {
+  Admin-only. Lists all platform invites (active, used, revoked, expired).
+  Fields: id, email, note, expires_at, used_at, used_by, used_by_email, revoked_at.
+  Token hash is never returned.
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("Returns array", function() {
+    const data = res.getBody().data;
+    expect(Array.isArray(data)).to.equal(true);
+  });
+}

@@ -1,0 +1,19 @@
+# Overlay for Stripe billing functional tests (PR 4B.1).
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.billing.yml up -d server
+#   make functional-test-billing
+#
+# Checkout calls real Stripe API — set sk_test_* and price IDs from your Dashboard
+# or use webhook-only tests (FUNCTIONAL_TEST_BILLING=1 skips checkout without STRIPE checkout keys).
+
+services:
+  server:
+    environment:
+      BILLING_ENABLED: "true"
+      APP_PUBLIC_URL: "https://localhost:8080"
+      STRIPE_SECRET_KEY: "${STRIPE_SECRET_KEY:-sk_test_functional_placeholder}"
+      STRIPE_WEBHOOK_SECRET: "${STRIPE_WEBHOOK_SECRET:-whsec_functional_test}"
+      STRIPE_PRICE_PRO: "${STRIPE_PRICE_PRO:-price_test_pro}"
+      STRIPE_PRICE_ENTERPRISE_STARTER: "${STRIPE_PRICE_ENTERPRISE_STARTER:-price_test_ent_starter}"
+      STRIPE_PRICE_ENTERPRISE_TEAM: "${STRIPE_PRICE_ENTERPRISE_TEAM:-price_test_ent_team}"
+      STRIPE_PRICE_ENTERPRISE_BUSINESS: "${STRIPE_PRICE_ENTERPRISE_BUSINESS:-price_test_ent_business}"

@@ -1,0 +1,35 @@
+meta {
+  name: GET List Instruments
+  type: http
+  seq: 42
+}
+
+get {
+  url: {{baseUrl}}/v1/admin/instruments?market_profile=indian_equity
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+params:query {
+  market_profile: indian_equity
+}
+
+docs {
+  Lists instruments (the symbol master), optionally filtered by
+  `?market_profile=<code>`. Seeded with RELIANCE/TCS/INFY/SBIN/HDFCBANK/
+  ICICIBANK/NIFTY/BANKNIFTY under `indian_equity` (migration 039).
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("Includes RELIANCE", function() {
+    const symbols = res.getBody().data.map(i => i.symbol);
+    expect(symbols).to.include("RELIANCE");
+  });
+}

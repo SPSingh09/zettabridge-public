@@ -1,0 +1,54 @@
+meta {
+  name: GET List Webhooks
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/v1/webhooks
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    const webhooks = res.getBody().data;
+    if (!Array.isArray(webhooks) || webhooks.length === 0) return;
+    const indianSymbols = ["RELIANCE", "TCS", "INFY", "NIFTY", "BANKNIFTY"];
+    const indian = webhooks.find((w) =>
+      indianSymbols.some((s) => w.symbol && w.symbol.toUpperCase().startsWith(s))
+    );
+    const mt5 = webhooks.find((w) =>
+      w.symbol && ["EURUSD", "GBPUSD", "USDJPY"].some((s) => w.symbol.toUpperCase().includes(s))
+    );
+    if (indian) {
+      bru.setVar("indianWebhookId", indian.id);
+      bru.setVar("indianWebhookToken", indian.token);
+      bru.setVar("webhookId", indian.id);
+      console.log("indianWebhookToken saved:", indian.id, "(" + indian.symbol + ")");
+    }
+    if (mt5) {
+      bru.setVar("webhookId", mt5.id);
+      bru.setVar("webhookToken", mt5.token);
+      console.log("webhookToken saved:", mt5.id, "(" + mt5.symbol + ")");
+    }
+    if (!indian && !mt5) {
+      const first = webhooks[0];
+      bru.setVar("webhookId", first.id);
+      bru.setVar("webhookToken", first.token);
+      bru.setVar("indianWebhookToken", first.token);
+      bru.setVar("indianWebhookId", first.id);
+      console.log("webhookToken + indianWebhookToken saved from first webhook:", first.id);
+    }
+  }
+}
+
+docs {
+  Auto-saves {{indianWebhookToken}} from first Indian-symbol webhook (RELIANCE/TCS/etc.)
+  and {{webhookToken}} from first forex webhook (EURUSD/etc.).
+  If neither matches, saves first webhook to both.
+}

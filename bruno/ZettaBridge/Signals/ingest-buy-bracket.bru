@@ -1,0 +1,58 @@
+meta {
+  name: POST Ingest Signal (BUY bracket — SL+TP)
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/v1/webhook/{{indianWebhookToken}}
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "action": "BUY",
+    "symbol": "RELIANCE",
+    "lot": 1,
+    "sl_pts": 20,
+    "tp_pts": 30,
+    "order_type": "MARKET",
+    "comment": "bruno_bracket"
+  }
+}
+
+docs {
+  Bracket/cover order signal. Requires an Indian broker credential (Zerodha/Angel/Dhan)
+  or MT5, using whichever webhook token that credential is bound to
+  (`indianWebhookToken` in this collection — see Webhooks → create-indian,
+  configured `default_order_type: MARKET`, so `order_type` here must match).
+
+  Broker behaviour under BROKER_MODE=mock: passes through as normal market order;
+  trade record will show `order_type: bracket` regardless.
+
+  Live broker behaviour:
+  - Zerodha (MIS): Cover Order via POST /orders/co; TP is ignored (CO only supports SL).
+  - Angel (MIS):   ROBO order via placeOrder; both SL and TP applied.
+  - Dhan (any):    Rejected with error_code=bracket_not_supported.
+  - MT5:           stopLoss / takeProfit added to MetaApi trade payload.
+
+  CNC product guard: bracket orders on CNC/delivery product are always rejected with
+  error_code=bracket_not_supported regardless of broker.
+
+  Check GET /v1/webhooks/:id/trades:
+  - `order_type`: "bracket"
+  - `sl_price`:   absolute SL price computed from LTP (Indian) or ask/bid (MT5)
+  - `tp_price`:   absolute TP price (null for Zerodha CO)
+}
+
+tests {
+  test("Status 202 queued", function() {
+    expect(res.getStatus()).to.equal(202);
+    expect(res.getBody().queued).to.equal(true);
+  });
+}

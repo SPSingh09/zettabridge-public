@@ -1,0 +1,37 @@
+meta {
+  name: POST Accept Symbol Request
+  type: http
+  seq: 47
+}
+
+post {
+  url: {{baseUrl}}/v1/admin/symbol-requests/{{symbolRequestId1}}/accept
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+script:pre-request {
+  const id = bru.getVar("symbolRequestId1");
+  if (!id || id.includes("{{")) {
+    throw new Error("symbolRequestId1 is not set. Run Symbol Requests > POST Create Symbol Request (1) first.");
+  }
+}
+
+docs {
+  Accepting doesn't resolve the request by itself — see
+  symbol-requests-create-instrument-for-resolve.bru, which does, and
+  symbol-requests-verify-resolved.bru, which confirms it.
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("Status is accepted", function() {
+    expect(res.getBody().data.status).to.equal("accepted");
+  });
+}

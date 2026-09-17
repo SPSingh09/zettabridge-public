@@ -1,0 +1,37 @@
+meta {
+  name: Org — 409 seat limit
+  type: http
+  seq: 33
+}
+
+post {
+  url: {{baseUrl}}/v1/orgs/{{orgId}}/invites
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "email": "overflow@example.com",
+    "role": "member"
+  }
+}
+
+docs {
+  Prerequisite: fill all seats (members + pending invites).
+  Expected: 409 organization seat limit reached
+}
+
+tests {
+  test("Seat limit enforced", function() {
+    expect(res.getStatus()).to.equal(409);
+  });
+}

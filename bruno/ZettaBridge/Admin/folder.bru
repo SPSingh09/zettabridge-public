@@ -1,0 +1,57 @@
+meta {
+  name: Admin
+  seq: 5
+}
+
+docs {
+  Platform operator APIs. Use Bearer {{adminToken}} (or {{token}} after Admin Login).
+
+  Session:
+  - POST /v1/auth/logout (Admin Logout — revokes JWT, clears tokens)
+
+  Users:
+  - GET   /v1/admin/users              (list + filter by plan/status/email)
+  - GET   /v1/admin/users/:id
+  - PATCH /v1/admin/users/:id          (status, orgs_enabled, early_bird_live grant/revoke)
+  - PUT  /v1/admin/users/:id/plan      (plan)
+  - PATCH enable / disable org creation (orgs_enabled true/false)
+  - PUT   /v1/admin/users/:id/plan
+
+  Organizations (E4):
+  - GET   /v1/admin/orgs               (?page, limit, status, name)
+  - GET   /v1/admin/orgs/:id
+  - PATCH /v1/admin/orgs/:id           (status active/suspended, seat_limit)
+  - GET   /v1/admin/orgs/:id/members
+
+  Platform settings (Phase 6 — Paper Trading market data provider):
+  - GET /v1/admin/settings/market-data-provider  (current provider + available options)
+  - PUT /v1/admin/settings/market-data-provider  ({"provider": "signal"|"fyers"})
+  Runtime-configurable — no server restart needed. Backed by a generic
+  `platform_settings` key-value table (migration 037); the background
+  SnapshotJob re-reads this setting on every sweep.
+
+  FYERS connection (market-data-only, never order placement — single
+  platform-wide connection, admin-managed via this API + the admin
+  dashboard's Platform Settings page, not per-user):
+  - GET /v1/admin/fyers/status   (connected?, pin_set?, token expiry)
+  - GET /v1/admin/fyers/connect  (returns a FYERS OAuth login redirect_url)
+  - PUT /v1/admin/fyers/pin      ({"pin": "1234"} — needed for silent refresh)
+  - GET /v1/admin/fyers/callback is PUBLIC (FYERS redirects the browser here
+    directly after login) — not called from this collection.
+  See fyers-connect.bru docs for the full flow and what's verified vs.
+  best-effort in the underlying FYERS API integration.
+
+  Market profiles & instruments (Phase 7 — curated, not admin-created):
+  - GET   /v1/admin/market-profiles          (list, active first)
+  - PATCH /v1/admin/market-profiles/:code    (base_currency/timezone/active
+    only — name/code are fixed identity, not accepted by this endpoint)
+  - GET    /v1/admin/instruments             (?market_profile=<code>)
+  - POST   /v1/admin/instruments             (add a symbol)
+  - PATCH  /v1/admin/instruments/:id         (name/instrument_type/tick_size/
+    lot_size/active)
+  - DELETE /v1/admin/instruments/:id
+  There is deliberately no POST for market-profiles — profiles are seeded via
+  migration, not created ad hoc through the API.
+
+  Also: GET /v1/me (admin profile)
+}

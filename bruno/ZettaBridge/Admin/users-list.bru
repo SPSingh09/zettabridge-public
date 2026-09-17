@@ -1,0 +1,44 @@
+meta {
+  name: GET List Users
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/v1/admin/users?page=1&limit=50
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+docs {
+  Platform admin only. Requires {{adminToken}} from admin Login.
+  Query: page, limit, plan, status, email (partial match).
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    const users = res.getBody().data?.users;
+    if (Array.isArray(users) && users.length > 0) {
+      const target = users.find((u) => u.role !== "admin");
+      if (target) {
+        bru.setVar("targetUserId", target.id);
+        console.log("targetUserId saved:", target.id, "(" + target.email + ")");
+      }
+    }
+  }
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("Saves targetUserId for detail request", function() {
+    const id = bru.getVar("targetUserId");
+    expect(id).to.be.a("string");
+    expect(id.length).to.be.greaterThan(0);
+  });
+}

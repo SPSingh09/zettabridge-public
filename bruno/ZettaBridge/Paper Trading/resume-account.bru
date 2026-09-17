@@ -1,0 +1,22 @@
+meta {
+  name: PUT Resume Paper Account
+  type: http
+  seq: 16
+}
+
+put {
+  url: {{baseUrl}}/v1/paper-accounts/{{paperAccountId}}/resume
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().data.status).to.equal("active");
+  });
+}

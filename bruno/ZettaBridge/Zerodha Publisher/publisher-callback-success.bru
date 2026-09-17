@@ -1,0 +1,41 @@
+meta {
+  name: GET Publisher Callback (success)
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/v1/publisher/callback?status=success&request_token=test_token_abc123&state={{publisherState}}
+  body: none
+  auth: none
+}
+
+tests {
+  test("Callback accepted (200 or 302)", function() {
+    expect([200, 302]).to.include(res.getStatus());
+  });
+}
+
+docs {
+  Simulates Kite redirecting back after the user confirmed the basket.
+
+  Kite appends: `?status=success&request_token=<kite_token>&state=<signed_state>`
+
+  **`state`** is an HMAC-SHA256-signed base64 token embedding the publisher order ID and a
+  30-minute expiry. It is generated server-side when the publisher order is created and embedded
+  in the configured callback URL (`ZERODHA_PUBLISHER_CALLBACK_URL`).
+
+  **To get a real `publisherState` for integration testing:**
+  1. Fire the ingest signal → let the worker create the publisher order.
+  2. GET Publisher Order Status → decode `handoff.fields.data` (base64 JSON basket).
+  3. Inspect the callback redirect URL emitted by the server (check server logs or capture
+     the actual Kite redirect during a live run). The `state=` param in that URL is the value
+     to set as `publisherState`.
+
+  The server validates HMAC, checks expiry, updates the publisher order to `user_returned`,
+  then queues the request_token for async settlement. After settlement the trade becomes
+  `submitted`. The response is a 302 redirect to the frontend trade page:
+  `{{frontendUrl}}/trades/<tradeId>?publisher=1`
+
+  **Failure modes tested separately:** missing state → 400, invalid HMAC → 400, expired → 400.
+}

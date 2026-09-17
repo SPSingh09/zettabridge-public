@@ -1,0 +1,27 @@
+meta {
+  name: GET Metrics
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/metrics
+}
+
+docs {
+  Prometheus scrape target. Includes billing series when server has run at least one billing request:
+  - zettabridge_billing_checkout_total
+  - zettabridge_billing_webhook_total{status="ok|error|signature_invalid|disabled"}
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("Core metrics present", function() {
+    const body = res.getBody();
+    expect(body).to.include("zettabridge_ingest_total");
+    expect(body).to.include("zettabridge_billing_checkout_total");
+    expect(body).to.include("zettabridge_billing_webhook_total");
+  });
+}

@@ -1,0 +1,46 @@
+.claude/
+dashboard/node_modules/
+dashboard/.next/
+dashboard/tsconfig.tsbuildinfo
+deploy/loadtest/env.local
+deploy/loadtest/results/
+deploy/sectest/env.local
+deploy/deploy-lightsail/staging.env
+vendor/
+deploy/deploy-aws-ecs/staging-aws.env
+
+# python virtual environments (e.g. scripts/.ppt-venv)
+**/*venv*/
+
+# Environment files — generic, with explicit example exceptions
+.env
+.env.*
+!.env.example
+!.env.*.example
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env.*.example
+
+# Build artifacts and dependencies, repo-wide
+**/node_modules/
+**/.next/
+**/dist/
+**/build/
+
+# Logs
+*.log
+**/*.log
+
+# Terraform, repo-wide (broader than the existing scoped rules)
+**/.terraform/
+**/*.tfstate
+**/*.tfstate.*
+**/*.tfvars
+!**/*.tfvars.example
+
+# Compiled binaries
+/server
+/api
+*.exe
+tree.txt

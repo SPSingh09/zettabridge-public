@@ -1,0 +1,52 @@
+meta {
+  name: PATCH Update Market Profile
+  type: http
+  seq: 41
+}
+
+patch {
+  url: {{baseUrl}}/v1/admin/market-profiles/indian_equity
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "base_currency": "INR",
+    "timezone": "Asia/Kolkata",
+    "name": "Should Be Ignored",
+    "code": "should_be_ignored"
+  }
+}
+
+docs {
+  Only `base_currency`, `timezone`, and `active` are editable — `name`/`code`
+  are the profile's fixed identity and aren't even accepted by the request
+  body struct, so sending them (as this request deliberately does) has no
+  effect. Values sent here (INR / Asia/Kolkata) are `indian_equity`'s real
+  seeded values, so this request is idempotent-safe to re-run.
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("base_currency/timezone applied", function() {
+    const d = res.getBody().data;
+    expect(d.base_currency).to.equal("INR");
+    expect(d.timezone).to.equal("Asia/Kolkata");
+  });
+  test("name/code unchanged despite being sent", function() {
+    const d = res.getBody().data;
+    expect(d.name).to.equal("Indian Equity");
+    expect(d.code).to.equal("indian_equity");
+  });
+}

@@ -1,0 +1,47 @@
+meta {
+  name: PUT Set Market Data Provider
+  type: http
+  seq: 34
+}
+
+put {
+  url: {{baseUrl}}/v1/admin/settings/market-data-provider
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "provider": "signal"
+  }
+}
+
+docs {
+  Switches the active provider at runtime — no server restart needed. The
+  background SnapshotJob (internal/marketdata.SnapshotJob) re-reads this
+  setting from platform_settings on every sweep (default every 45s,
+  MARKET_DATA_SNAPSHOT_INTERVAL_SEC), so the change takes effect on the next
+  tick.
+
+  `provider` must be exactly "signal" or "fyers" (400 otherwise). Selecting
+  "fyers" before FYERS_API_KEY/FYERS_ACCESS_TOKEN are set is accepted but has
+  no visible effect — the stub provider just keeps returning "no quote", same
+  as "signal".
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("Provider updated", function() {
+    expect(res.getBody().data.provider).to.equal("signal");
+  });
+}

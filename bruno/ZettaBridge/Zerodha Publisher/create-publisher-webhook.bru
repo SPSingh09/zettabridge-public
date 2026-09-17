@@ -1,0 +1,65 @@
+meta {
+  name: POST Create Webhook (Publisher)
+  type: http
+  seq: 0
+}
+
+post {
+  url: {{baseUrl}}/v1/webhooks
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "label": "RELIANCE Publisher",
+    "broker_cred_id": "{{zerodhaPublisherCredId}}",
+    "symbol": "RELIANCE",
+    "lot_size": 1,
+    "max_risk_pct": 0,
+    "sl_points": 0,
+    "tp_points": 0
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    const data = res.getBody().data;
+    bru.setVar("indianWebhookId", data.id);
+    bru.setVar("indianWebhookToken", data.token);
+    console.log("Publisher webhook created. Token set as indianWebhookToken:", data.token);
+    console.log("Attach credential ID:", bru.getVar("zerodhaPublisherCredId"));
+  }
+}
+
+tests {
+  test("Publisher webhook created", function() {
+    expect(res.getStatus()).to.equal(201);
+    const data = res.getBody().data;
+    expect(data.symbol).to.equal("RELIANCE");
+    expect(data.token).to.be.a("string");
+  });
+}
+
+docs {
+  Creates a webhook attached to a Zerodha Publisher credential.
+
+  **Prerequisites:**
+  1. Run Credentials → create-zerodha-publisher → `zerodhaPublisherCredId` will be set.
+  2. Ensure you are logged in (`token` set).
+
+  `lot_size: 1` = 1 share per signal (publisher mode treats quantity as shares directly).
+  `sl_points` / `tp_points` set to 0 — bracket orders are not supported in publisher mode.
+
+  **After this call:**
+  - `indianWebhookToken` is set automatically — use it in the signal payload URL.
+  - Fire a LIMIT signal via POST Ingest Signal (Publisher Mode).
+}

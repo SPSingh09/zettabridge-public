@@ -1,0 +1,52 @@
+meta {
+  name: POST Register (with invite code)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/v1/auth/register
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "{{email}}",
+    "password": "{{password}}",
+    "invite_code": "{{platformInviteToken}}"
+  }
+}
+
+script:pre-request {
+  const tok = bru.getVar("platformInviteToken");
+  if (!tok || tok.includes("{{")) {
+    throw new Error("platformInviteToken not set. Run Admin > POST Create Platform Invite first.");
+  }
+}
+
+docs {
+  Closed-beta registration path. Requires CLOSED_REGISTRATION=true on the server.
+  Pass the `invite_code` (inv_...) from Admin > POST Create Platform Invite.
+
+  When CLOSED_REGISTRATION=false the invite_code field is accepted but ignored.
+  When CLOSED_REGISTRATION=true and no invite_code is supplied, returns:
+    { "error": "registration is closed", "error_code": "registration_closed" }
+
+  Email-bound invites: if the invite was created with an email, the registering
+  address must match exactly, otherwise returns error_code=invite_email_mismatch.
+}
+
+tests {
+  test("Status 201", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+  test("Returns user id", function() {
+    const data = res.getBody().data;
+    expect(data.id).to.be.a("string");
+  });
+}

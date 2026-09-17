@@ -1,0 +1,46 @@
+meta {
+  name: PUT Set User Plan — Pro Plus
+  type: http
+  seq: 11
+}
+
+put {
+  url: {{baseUrl}}/v1/admin/users/{{targetUserId}}/plan
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "plan": "pro_plus"
+  }
+}
+
+script:pre-request {
+  const id = bru.getVar("targetUserId");
+  if (!id || id.includes("{{")) {
+    throw new Error("targetUserId is not set. Run Admin > GET List Users first.");
+  }
+}
+
+docs {
+  Upgrade test user to Pro Plus for multi-product credential testing.
+  Next: Auth → Login as target user → Credentials → create-multi-product-pro-plus.
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("Plan is pro_plus", function() {
+    expect(res.getBody().data.plan).to.equal("pro_plus");
+  });
+}

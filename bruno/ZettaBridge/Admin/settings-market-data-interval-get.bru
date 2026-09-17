@@ -1,0 +1,35 @@
+meta {
+  name: GET Market Data Fetch Interval Setting
+  type: http
+  seq: 38
+}
+
+get {
+  url: {{baseUrl}}/v1/admin/settings/market-data-interval
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+docs {
+  Returns the currently active Paper Trading snapshot sweep cadence:
+  `interval_seconds` (the DB override if an admin has set one, else the
+  MARKET_DATA_SNAPSHOT_INTERVAL_SEC env default, 45), plus `min_seconds`/
+  `max_seconds` (the allowed range, 5-3600) the dashboard uses to bound the
+  input.
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("Shape", function() {
+    const d = res.getBody().data;
+    expect(d).to.have.property("interval_seconds");
+    expect(d).to.have.property("min_seconds");
+    expect(d).to.have.property("max_seconds");
+  });
+}

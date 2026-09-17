@@ -1,0 +1,45 @@
+meta {
+  name: POST Admin Login
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/v1/auth/login
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "{{adminEmail}}",
+    "password": "{{adminPassword}}"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    const json = res.getBody();
+    const accessToken = json.data.token;
+    bru.setVar("adminToken", accessToken);
+    bru.setVar("token", accessToken);
+    const parts = accessToken.split(".");
+    if (parts.length === 3) {
+      const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
+      if (payload.sub) {
+        bru.setVar("adminId", payload.sub);
+        console.log("adminToken and token saved; adminId=" + payload.sub);
+      }
+    }
+  }
+}
+
+docs {
+  Login with a platform admin account (role=admin).
+  Set BOOTSTRAP_ADMIN_EMAIL on server and register that email first,
+  or run migration + manual UPDATE users SET role='admin'.
+}

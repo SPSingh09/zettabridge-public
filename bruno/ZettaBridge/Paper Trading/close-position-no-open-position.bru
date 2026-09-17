@@ -1,0 +1,37 @@
+meta {
+  name: POST Close Position (No Open Position)
+  type: http
+  seq: 16
+}
+
+post {
+  url: {{baseUrl}}/v1/paper-accounts/{{paperAccountId}}/positions/close
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "symbol": "INFY"
+  }
+}
+
+docs {
+  Run immediately after close-position-api.bru, which just flattened the
+  INFY position — closing it again with nothing open should 409, not panic
+  or silently no-op.
+}
+
+tests {
+  test("Status 409", function() {
+    expect(res.getStatus()).to.equal(409);
+  });
+}

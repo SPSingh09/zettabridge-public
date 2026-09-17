@@ -1,0 +1,39 @@
+meta {
+  name: Org
+  seq: 6
+}
+
+docs {
+  Household organization APIs (E1–E4). Bearer {{token}} required.
+
+  Org CRUD:
+  - POST   /v1/orgs
+  - GET    /v1/orgs
+  - GET    /v1/orgs/:id
+  - PATCH  /v1/orgs/:id
+  - DELETE /v1/orgs/:id
+
+  Members:
+  - GET    /v1/orgs/:id/members
+  - GET    /v1/orgs/:id/members/:userId
+  - PATCH  /v1/orgs/:id/members/:userId
+  - DELETE /v1/orgs/:id/members/:userId
+
+  Invites:
+  - POST   /v1/orgs/:id/invites
+  - GET    /v1/orgs/:id/invites
+  - DELETE /v1/orgs/:id/invites/:inviteId
+
+  Shared resources (E3):
+  - GET /v1/orgs/:id/webhooks
+  - GET /v1/orgs/:id/trades
+  - GET /v1/orgs/:id/pnl
+
+  Governance (E4):
+  - GET  /v1/orgs/:id/usage
+  - GET  /v1/orgs/:id/activity
+  - POST /v1/orgs/:id/transfer-ownership
+  - POST /v1/orgs/:id/leave
+
+  Prerequisites: admin sets plan=household + orgs_enabled=true on owner.
+}

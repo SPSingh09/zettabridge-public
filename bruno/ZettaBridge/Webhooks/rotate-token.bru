@@ -1,0 +1,38 @@
+meta {
+  name: POST Rotate Webhook Token
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/v1/webhooks/{{webhookId}}/rotate-token
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Issues a new webhook URL token; invalidates the previous token in Redis cache.
+  Response includes the full webhook object with the new `token`.
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    const data = res.getBody().data;
+    bru.setVar("webhookTokenPrev", bru.getVar("webhookToken"));
+    bru.setVar("webhookToken", data.token);
+    console.log("webhookToken rotated — old token saved as webhookTokenPrev");
+  }
+}
+
+tests {
+  test("Token rotated", function() {
+    expect(res.getStatus()).to.equal(200);
+    const data = res.getBody().data;
+    expect(data.token).to.be.a("string");
+    expect(data.token.length).to.be.greaterThan(8);
+  });
+}

@@ -1,0 +1,70 @@
+meta {
+  name: GET Publisher Order Status
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/v1/publisher/orders/{{publisherOrderId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    const d = res.getBody().data;
+    if (d.status === "awaiting_confirmation") {
+      console.log("handoff.fields.api_key:", d.handoff.fields.api_key);
+      console.log("handoff.fields.data (basket JSON):", d.handoff.fields.data);
+      console.log("POST these as a form to:", d.handoff.action);
+    }
+  }
+}
+
+tests {
+  test("Returns 200 with order id and status", function() {
+    expect(res.getStatus()).to.equal(200);
+    const data = res.getBody().data;
+    expect(data.id).to.equal(bru.getVar("publisherOrderId"));
+    expect(["created", "awaiting_confirmation", "user_returned", "user_cancelled", "expired"]).to.include(data.status);
+    expect(data.expires_at).to.be.a("string");
+  });
+
+  test("awaiting_confirmation orders include handoff form fields", function() {
+    const data = res.getBody().data;
+    if (data.status !== "awaiting_confirmation") return;
+    expect(data.handoff).to.be.an("object");
+    expect(data.handoff.provider).to.equal("zerodha");
+    expect(data.handoff.method).to.equal("POST_FORM");
+    expect(data.handoff.action).to.include("kite.zerodha.com");
+    expect(data.handoff.fields.api_key).to.be.a("string");
+    expect(data.handoff.fields.data).to.be.a("string");
+  });
+}
+
+docs {
+  Returns publisher order status and handoff form fields.
+
+  **Statuses:**
+  - `created`               — order inserted; worker not yet confirmed delivery to Kite
+  - `awaiting_confirmation` — basket ready; user needs to open Kite and confirm
+  - `user_returned`         — user returned from Kite (Kite callback received); trade being settled
+  - `user_cancelled`        — user cancelled the Kite basket form
+  - `expired`               — 30-minute window passed without action
+
+  The `handoff` object (present for `awaiting_confirmation`) has:
+  - `handoff.action`            — `https://kite.zerodha.com/connect/basket`
+  - `handoff.method`            — `POST_FORM`
+  - `handoff.fields.api_key`    — Zerodha API key
+  - `handoff.fields.data`       — JSON-encoded basket items array
+
+  The dashboard POSTs these as a hidden HTML form with target="_blank". The user lands on
+  the Kite basket confirmation page, confirms (or cancels), and Kite redirects to the backend
+  callback URL with `?status=success|cancelled&state=<signed>`.
+
+  **Ownership:** must be authenticated as the credential owner. Returns 404 for unknown/unowned orders.
+}

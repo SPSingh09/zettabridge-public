@@ -1,0 +1,28 @@
+meta {
+  name: GET Paper Account
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/v1/paper-accounts/{{paperAccountId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Single paper account detail. 404 if it doesn't belong to the caller.
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("Returns the requested account", function() {
+    expect(res.getBody().data.id).to.equal(bru.getVar("paperAccountId"));
+  });
+}

@@ -1,0 +1,33 @@
+meta {
+  name: GET Verify Symbol Request Resolved
+  type: http
+  seq: 50
+}
+
+get {
+  url: {{baseUrl}}/v1/admin/symbol-requests?status=all
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("Request 1 is resolved and linked to the new instrument", function() {
+    const list = res.getBody().data;
+    const r = list.find(x => x.id === bru.getVar("symbolRequestId1"));
+    expect(r).to.not.be.undefined;
+    expect(r.status).to.equal("resolved");
+    expect(r.resolved_instrument_id).to.equal(bru.getVar("symbolRequestInstrumentId"));
+  });
+  test("Request 2 is still rejected", function() {
+    const list = res.getBody().data;
+    const r = list.find(x => x.id === bru.getVar("symbolRequestId2"));
+    expect(r.status).to.equal("rejected");
+  });
+}

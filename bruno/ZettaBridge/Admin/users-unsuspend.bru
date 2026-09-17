@@ -1,0 +1,45 @@
+meta {
+  name: PATCH Unsuspend User
+  type: http
+  seq: 9
+}
+
+patch {
+  url: {{baseUrl}}/v1/admin/users/{{targetUserId}}
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "status": "active"
+  }
+}
+
+script:pre-request {
+  const id = bru.getVar("targetUserId");
+  if (!id || id.includes("{{")) {
+    throw new Error("targetUserId is not set. Run Admin > GET List Users first.");
+  }
+}
+
+docs {
+  Restores a suspended user to active status.
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("User is active", function() {
+    expect(res.getBody().data.status).to.equal("active");
+  });
+}

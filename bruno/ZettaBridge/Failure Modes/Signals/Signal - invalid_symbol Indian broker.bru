@@ -1,0 +1,40 @@
+meta {
+  name: Signal — invalid_symbol (forex on Indian cred)
+  type: http
+  seq: 41
+}
+
+post {
+  url: {{baseUrl}}/v1/webhook/{{indianForexWebhookToken}}
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "action": "BUY",
+    "symbol": "EURUSD",
+    "lot": 1
+  }
+}
+
+docs {
+  Prerequisites (run in order):
+  1. Credentials → create-demo (zerodha NSE)
+  2. POST /v1/webhooks with `broker_cred_id` = zerodha cred, `symbol`: EURUSD → save token as `indianForexWebhookToken`
+     (or duplicate create body from this collection's setup script)
+
+  Ingest returns 202; worker rejects with trade `status=rejected`, `error_code=invalid_symbol`.
+  Check GET /v1/webhooks/:id/trades — not exposed on ingest response.
+}
+
+tests {
+  test("Ingest accepted (async reject)", function() {
+    expect(res.getStatus()).to.equal(202);
+    expect(res.getBody().queued).to.equal(true);
+  });
+}

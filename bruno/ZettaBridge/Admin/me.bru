@@ -1,0 +1,31 @@
+meta {
+  name: GET Admin Me
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/v1/me
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+docs {
+  Same endpoint as Account > GET Me. Works for admin JWT too.
+  Prerequisite: Admin > POST Admin Login (saves {{adminToken}}).
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("Returns admin profile", function() {
+    const data = res.getBody().data;
+    expect(data.role).to.equal("admin");
+    expect(data.email).to.equal(bru.getVar("adminEmail"));
+  });
+}

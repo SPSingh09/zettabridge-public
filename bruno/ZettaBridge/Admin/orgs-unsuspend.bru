@@ -1,0 +1,46 @@
+meta {
+  name: PATCH Unsuspend Org
+  type: http
+  seq: 17
+}
+
+patch {
+  url: {{baseUrl}}/v1/admin/orgs/{{orgId}}
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "status": "active"
+  }
+}
+
+script:pre-request {
+  const id = bru.getVar("orgId");
+  if (!id || id.includes("{{")) {
+    throw new Error("orgId is not set. Run Admin > GET List Orgs or Org > POST Create Org first.");
+  }
+}
+
+docs {
+  Platform admin. Restores org-scoped resource access after suspension.
+  Prerequisite: PATCH Suspend Org (or PATCH Update Org with status=suspended).
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("Org is active", function() {
+    expect(res.getBody().data.status).to.equal("active");
+  });
+}

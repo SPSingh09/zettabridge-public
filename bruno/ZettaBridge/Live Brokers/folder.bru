@@ -1,0 +1,28 @@
+meta {
+  name: Live Brokers
+  seq: 11
+}
+
+docs {
+  **Live broker setup (`BROKER_MODE=live`)**
+
+  ZettaBridge ships live HTTP adapters for all four brokers. Live mode **never** falls back to mock — failed broker auth or network errors reject trades and fail verify.
+
+  | Broker | raw_creds | Equity probe | Notes |
+  |--------|-----------|--------------|-------|
+  | mt5_cloud | auth_token:account_id | MetaApi account info | CLOSE = symbol-only |
+  | zerodha | api_key:access_token | Kite margins | Daily Kite token refresh |
+  | angel | api_key:client_code:jwt | SmartAPI getRMS | Set BROKER_ANGEL_CLIENT_* egress IPs |
+  | dhan | client_id:access_token | fundlimit | Static IP whitelist required |
+
+  **Orders (v1):** Indian brokers use market orders only — webhook SL/TP points are not sent live yet.
+
+  **Verify:** `POST /v1/credentials/:id/verify` returns `{ valid, error?, error_code?, hint? }`.
+  On auth failure, `hint` explains how to re-PUT `raw_creds` (manual token refresh in v1).
+
+  **Suggested flow:** Credentials → create (broker-specific) → verify → Webhooks → Signals.
+  Use **pro** or **pro_plus** plan and `account_mode: live` for production credentials.
+
+  Token refresh: see `docs/broker-guide.md`. Pair with **create-angel** / **create-dhan** credential templates.
+  Production deploy: `docs/deploy-production.md`
+}

@@ -1,0 +1,36 @@
+meta {
+  name: Admin — 400 invalid plan
+  type: http
+  seq: 25
+}
+
+put {
+  url: {{baseUrl}}/v1/admin/users/{{targetUserId}}/plan
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "plan": "invalid-plan"
+  }
+}
+
+docs {
+  Prerequisite: Admin Login + List Users ({{targetUserId}} set).
+  Expected: 400 plan must be free, paper, pro, or pro_plus
+}
+
+tests {
+  test("Invalid plan returns 400", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+}

@@ -1,0 +1,62 @@
+meta {
+  name: POST Create Platform Invite
+  type: http
+  seq: 30
+}
+
+post {
+  url: {{baseUrl}}/v1/admin/invites
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "email": "{{inviteeEmail}}",
+    "note": "closed beta invite"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    const data = res.getBody().data;
+    bru.setVar("platformInviteToken", data.token);
+    bru.setVar("platformInviteId", data.id);
+    console.log("platformInviteToken saved: " + data.token);
+  }
+}
+
+docs {
+  Admin-only. Creates a one-time platform invite code for closed-beta onboarding.
+  The raw `token` (inv_...) is returned once — save it as `platformInviteToken`.
+  Only the SHA-256 hash is stored; the raw token cannot be recovered later.
+
+  Optional fields:
+  - `email`: binds the invite to a specific email address
+  - `note`: internal note (not shown to invitee)
+
+  TTL is controlled by PLATFORM_INVITE_TTL_DAYS (default 30 days).
+  Use GET Admin > List Platform Invites to see status; DELETE to revoke.
+}
+
+tests {
+  test("Status 201", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+  test("Returns token and id", function() {
+    const data = res.getBody().data;
+    expect(data.token).to.be.a("string").that.startsWith("inv_");
+    expect(data.id).to.be.a("string");
+  });
+  test("Token stored in collection var", function() {
+    expect(bru.getVar("platformInviteToken")).to.be.a("string").that.startsWith("inv_");
+  });
+}

@@ -1,0 +1,31 @@
+meta {
+  name: POST Resend Verification
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/v1/auth/resend-verification
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "{{email}}"
+  }
+}
+
+docs {
+  Rate limited (3/hour per email). Always returns a generic success message.
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+}

@@ -1,0 +1,35 @@
+meta {
+  name: POST Transfer Ownership
+  type: http
+  seq: 18
+}
+
+post {
+  url: {{baseUrl}}/v1/orgs/{{orgId}}/transfer-ownership
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "user_id": "{{memberUserId}}"
+  }
+}
+
+docs {
+  Owner only. Promotes target to owner; former owner becomes admin.
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+}

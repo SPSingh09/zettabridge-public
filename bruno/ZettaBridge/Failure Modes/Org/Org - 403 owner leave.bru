@@ -1,0 +1,26 @@
+meta {
+  name: Org — 403 owner cannot leave
+  type: http
+  seq: 36
+}
+
+post {
+  url: {{baseUrl}}/v1/orgs/{{orgId}}/leave
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Prerequisite: login as org owner.
+  Expected: 403 organization owner cannot leave
+}
+
+tests {
+  test("Owner cannot leave", function() {
+    expect(res.getStatus()).to.equal(403);
+  });
+}

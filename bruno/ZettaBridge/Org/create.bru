@@ -1,0 +1,43 @@
+meta {
+  name: POST Create Org
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/v1/orgs
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "name": "Acme Trading"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    const data = res.getBody().data;
+    bru.setVar("orgId", data.id);
+    console.log("orgId saved:", data.id);
+  }
+}
+
+docs {
+  Requires: plan=household AND orgs_enabled=true AND user not already in an org.
+}
+
+tests {
+  test("Status 201", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+}

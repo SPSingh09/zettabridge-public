@@ -1,0 +1,31 @@
+meta {
+  name: DELETE Delete Paper Account
+  type: http
+  seq: 18
+}
+
+delete {
+  url: {{baseUrl}}/v1/paper-accounts/{{paperAccountId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Frees up the flat 1-account slot so create-account can be re-run.
+
+  Prerequisite: Paper Trading → delete-webhook must run first — a paper
+  account cannot be deleted while a webhook still references it (returns 409
+  "paper account is in use by one or more webhooks", mirroring Credentials →
+  delete's same check for broker credentials). See Failure Modes →
+  Paper Trading for that 409 case tested in isolation.
+}
+
+tests {
+  test("Status 204", function() {
+    expect(res.getStatus()).to.equal(204);
+  });
+}

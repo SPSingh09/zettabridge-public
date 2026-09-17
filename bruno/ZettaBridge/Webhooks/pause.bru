@@ -1,0 +1,15 @@
+meta {
+  name: PUT Pause Webhook
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/v1/webhooks/{{webhookId}}/pause
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}

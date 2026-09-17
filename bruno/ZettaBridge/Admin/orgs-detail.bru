@@ -1,0 +1,21 @@
+meta {
+  name: GET Org Detail
+  type: http
+  seq: 13
+}
+
+get {
+  url: {{baseUrl}}/v1/admin/orgs/{{orgId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+}

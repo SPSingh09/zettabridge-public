@@ -1,0 +1,33 @@
+meta {
+  name: DELETE Org
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{baseUrl}}/v1/orgs/{{orgId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+script:pre-request {
+  const id = bru.getVar("orgId");
+  if (!id || id.includes("{{")) {
+    throw new Error("orgId is not set.");
+  }
+}
+
+docs {
+  Owner only. Destructive — removes org and memberships.
+  Resources with org_id are unlinked (SET NULL), not deleted.
+}
+
+tests {
+  test("Status 204", function() {
+    expect(res.getStatus()).to.equal(204);
+  });
+}

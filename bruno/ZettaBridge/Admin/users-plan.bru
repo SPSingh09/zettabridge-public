@@ -1,0 +1,53 @@
+meta {
+  name: PUT Set User Plan
+  type: http
+  seq: 10
+}
+
+put {
+  url: {{baseUrl}}/v1/admin/users/{{targetUserId}}/plan
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "plan": "pro"
+  }
+}
+
+script:pre-request {
+  const id = bru.getVar("targetUserId");
+  if (!id || id.includes("{{")) {
+    throw new Error("targetUserId is not set. Run Admin > GET List Users first.");
+  }
+}
+
+docs {
+  Valid plans: **free**, **paper**, **pro**, **pro_plus**.
+
+  Change the body `plan` value before running, or duplicate this request for other tiers.
+  Sets `billing_source: admin` on the user.
+
+  **Pro Plus testing:** set `"plan": "pro_plus"` then run Credentials → create-multi-product-pro-plus.
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("Plan updated", function() {
+    expect(res.getBody().data.plan).to.equal("pro");
+  });
+  test("billing_source admin", function() {
+    expect(res.getBody().data.billing_source).to.equal("admin");
+  });
+}

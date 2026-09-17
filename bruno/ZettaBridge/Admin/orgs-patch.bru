@@ -1,0 +1,35 @@
+meta {
+  name: PATCH Update Org
+  type: http
+  seq: 14
+}
+
+patch {
+  url: {{baseUrl}}/v1/admin/orgs/{{orgId}}
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "seat_limit": 10
+  }
+}
+
+docs {
+  Platform admin. Set status (active/suspended) and/or seat_limit.
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+}

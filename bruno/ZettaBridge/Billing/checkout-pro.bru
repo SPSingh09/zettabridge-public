@@ -1,0 +1,40 @@
+meta {
+  name: POST Checkout — Pro
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/v1/billing/checkout
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "plan": "pro"
+  }
+}
+
+docs {
+  Starts Stripe Checkout for Pro (1 live broker, 1 live webhook).
+  Requires BILLING_ENABLED=true and STRIPE_PRICE_PRO configured.
+}
+
+tests {
+  test("Checkout URL or disabled", function() {
+    const status = res.getStatus();
+    expect([200, 503]).to.include(status);
+    if (status === 200) {
+      expect(res.getBody().data.url).to.be.a("string");
+    }
+  });
+}

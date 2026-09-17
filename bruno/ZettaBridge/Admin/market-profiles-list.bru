@@ -1,0 +1,32 @@
+meta {
+  name: GET List Market Profiles
+  type: http
+  seq: 40
+}
+
+get {
+  url: {{baseUrl}}/v1/admin/market-profiles
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+docs {
+  Lists every market profile, active first then by code. Market profiles are
+  curated via migration (not admin-created — there is deliberately no POST
+  endpoint here) and seeded with `indian_equity` (migration 039) and
+  `indian_fno` (migration 040).
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("Includes indian_equity", function() {
+    const codes = res.getBody().data.map(p => p.code);
+    expect(codes).to.include("indian_equity");
+  });
+}

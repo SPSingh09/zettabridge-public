@@ -1,0 +1,25 @@
+meta {
+  name: GET Org Activity
+  type: http
+  seq: 17
+}
+
+get {
+  url: {{baseUrl}}/v1/orgs/{{orgId}}/activity?limit=50
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Owner/admin only. Governance audit log.
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+}

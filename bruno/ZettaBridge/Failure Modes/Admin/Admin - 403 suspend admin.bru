@@ -1,0 +1,36 @@
+meta {
+  name: Admin — 403 cannot suspend admin
+  type: http
+  seq: 24
+}
+
+patch {
+  url: {{baseUrl}}/v1/admin/users/{{targetUserId}}
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "status": "suspended"
+  }
+}
+
+docs {
+  Prerequisite: Admin Login with {{targetUserId}} set to an admin account id.
+  Expected: 403 { "error": "cannot suspend platform admin accounts" }
+}
+
+tests {
+  test("Cannot suspend admin", function() {
+    expect(res.getStatus()).to.equal(403);
+  });
+}

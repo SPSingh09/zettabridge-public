@@ -1,0 +1,58 @@
+meta {
+  name: POST Ingest Signal (Publisher Mode)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/v1/webhook/{{indianWebhookToken}}
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "action": "BUY",
+    "symbol": "RELIANCE",
+    "lot": 1,
+    "price": 1350.00,
+    "comment": "bruno_publisher_limit"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 202) {
+    console.log("Signal queued. Wait ~2s for the worker, then run 'GET Webhook Trades' to find the trade.");
+    console.log("Copy trade.id → set as tradeId. Copy trade.broker_order → set as publisherOrderId.");
+  }
+}
+
+tests {
+  test("Signal accepted 202", function() {
+    expect(res.getStatus()).to.equal(202);
+    expect(res.getBody().queued).to.equal(true);
+  });
+}
+
+docs {
+  Fires a LIMIT BUY signal for the publisher webhook. Publisher mode only supports LIMIT orders —
+  the signal MUST include a `price` field (Kite basket does not support MARKET orders).
+
+  **Prerequisites:**
+  1. Create a Zerodha publisher credential (Credentials → create-zerodha-publisher).
+  2. Create a webhook with `broker_cred_id` pointing to that credential
+     (Zerodha Publisher → create-publisher-webhook).
+  3. Set `indianWebhookToken` in the environment to the webhook token.
+  4. Set `price` to a realistic limit price for RELIANCE on NSE.
+
+  **After this call (wait ~2s for the worker):**
+  1. Run Webhooks → GET Webhook Trades → copy `id` → set `tradeId` in env.
+  2. Copy `broker_order` from that trade → set `publisherOrderId` in env.
+  3. Run GET Publisher Order Status to get the handoff form fields.
+  4. Open the dashboard trade page — click "Open Kite" to POST the basket form.
+  5. Confirm on Kite → Kite redirects to the callback URL.
+}

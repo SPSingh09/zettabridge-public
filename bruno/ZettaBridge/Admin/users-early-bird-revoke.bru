@@ -1,0 +1,43 @@
+meta {
+  name: PATCH Revoke Early Bird Live
+  type: http
+  seq: 13
+}
+
+patch {
+  url: {{baseUrl}}/v1/admin/users/{{targetUserId}}
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "early_bird_live": false
+  }
+}
+
+docs {
+  Revokes early-bird live access for a free user. Existing live credentials remain,
+  but outbound orders route to mock/paper (Indian brokers) or MT5 demo server when
+  configured — they no longer hit real live broker APIs.
+
+  Platform-wide revoke: set `EARLY_BIRD_LIVE_ENABLED=false`, or set
+  `EARLY_BIRD_LIVE_ENDS_AT` / `EARLY_BIRD_LIVE_STARTS_AT` outside the current window.
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("Early bird revoked", function() {
+    expect(res.getBody().data.early_bird_live).to.equal(false);
+  });
+}

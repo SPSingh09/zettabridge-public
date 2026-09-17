@@ -1,0 +1,36 @@
+meta {
+  name: PUT Reset Paper Account
+  type: http
+  seq: 17
+}
+
+put {
+  url: {{baseUrl}}/v1/paper-accounts/{{paperAccountId}}/reset
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "starting_balance": 100000
+  }
+}
+
+docs {
+  Clears positions, orders, trades, and snapshots; restores cash to starting_balance.
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().data.cash_balance).to.equal(100000);
+  });
+}

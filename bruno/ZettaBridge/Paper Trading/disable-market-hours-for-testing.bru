@@ -1,0 +1,50 @@
+meta {
+  name: PUT Disable Market Hours Enforcement (for testing)
+  type: http
+  seq: 0
+}
+
+put {
+  url: {{baseUrl}}/v1/admin/settings/market-hours-enforcement
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "enabled": false
+  }
+}
+
+docs {
+  Market-hours enforcement (Phase 7) is ON by default — real NSE hours are
+  Mon-Fri 09:15-15:30 IST, so BUY/SELL signals sent outside that window are
+  rejected with "outside trading hours for ...". Since this test suite runs
+  at arbitrary times of day, it disables enforcement first (admin-only,
+  runtime toggle, no restart) so ingest-buy/ingest-sell-partial fill
+  deterministically regardless of when you run this collection.
+
+  Requires an admin token — run Admin/login.bru (sets {{adminToken}}) before
+  this in the same invocation, e.g.:
+    npx @usebruno/cli run "Admin/login.bru" -r "Auth/login.bru" -r "Paper Trading" --env local
+
+  enable-market-hours-after-testing.bru (last in this folder) restores the
+  enabled-by-default state afterward.
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("Disabled", function() {
+    expect(res.getBody().data.enabled).to.equal(false);
+  });
+}

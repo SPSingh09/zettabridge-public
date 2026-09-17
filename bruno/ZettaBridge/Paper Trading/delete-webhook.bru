@@ -1,0 +1,27 @@
+meta {
+  name: DELETE Delete Paper Webhook
+  type: http
+  seq: 17
+}
+
+delete {
+  url: {{baseUrl}}/v1/webhooks/{{paperWebhookId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Must run before delete-account — a paper account cannot be deleted while a
+  webhook still routes to it (see Failure Modes → Paper Trading → 409 delete
+  while webhook attached).
+}
+
+tests {
+  test("Status 204", function() {
+    expect(res.getStatus()).to.equal(204);
+  });
+}

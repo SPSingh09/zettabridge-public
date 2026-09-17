@@ -1,0 +1,34 @@
+meta {
+  name: Login — 403 email not verified
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/v1/auth/login
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "{{unverifiedEmail}}",
+    "password": "{{unverifiedPassword}}"
+  }
+}
+
+docs {
+  Prerequisites: register with EMAIL_VERIFICATION_REQUIRED=true and do not verify.
+  Expect 403 email not verified.
+}
+
+tests {
+  test("Unverified login rejected", function() {
+    expect(res.getStatus()).to.equal(403);
+    expect(res.getBody().error).to.include("email not verified");
+  });
+}

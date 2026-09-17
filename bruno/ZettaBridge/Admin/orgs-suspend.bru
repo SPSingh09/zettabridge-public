@@ -1,0 +1,45 @@
+meta {
+  name: PATCH Suspend Org
+  type: http
+  seq: 16
+}
+
+patch {
+  url: {{baseUrl}}/v1/admin/orgs/{{orgId}}
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+script:pre-request {
+  const id = bru.getVar("orgId");
+  if (!id || id.includes("{{")) {
+    throw new Error("orgId is not set. Run Admin > GET List Orgs or Org > POST Create Org first.");
+  }
+}
+
+body:json {
+  {
+    "status": "suspended"
+  }
+}
+
+docs {
+  Platform admin. Suspended orgs lose org-scoped resource access.
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("Org is suspended", function() {
+    expect(res.getBody().data.status).to.equal("suspended");
+  });
+}

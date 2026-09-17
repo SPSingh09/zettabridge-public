@@ -1,0 +1,39 @@
+meta {
+  name: Register — 403 registration_closed (no invite)
+  type: http
+  seq: 50
+}
+
+post {
+  url: {{baseUrl}}/v1/auth/register
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "closed-test@example.com",
+    "password": "password123"
+  }
+}
+
+docs {
+  Requires CLOSED_REGISTRATION=true on the server (set in docker-compose or .env).
+  Registration without an invite_code returns 403 with error_code=registration_closed.
+  The dashboard shows an invite-code input field on this error.
+
+  When CLOSED_REGISTRATION=false this request returns 201 (or 409 if email exists).
+}
+
+tests {
+  test("Status 403 (registration closed)", function() {
+    expect(res.getStatus()).to.equal(403);
+  });
+  test("error_code is registration_closed", function() {
+    expect(res.getBody().error_code).to.equal("registration_closed");
+  });
+}

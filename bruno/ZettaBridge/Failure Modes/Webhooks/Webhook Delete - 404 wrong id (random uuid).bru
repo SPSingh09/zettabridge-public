@@ -1,0 +1,26 @@
+meta {
+  name: Webhook Delete — 404 wrong id (random uuid)
+  type: http
+  seq: 2
+}
+
+delete {
+  url: {{baseUrl}}/v1/webhooks/00000000-0000-0000-0000-000000000000
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Prerequisite: run Auth > Login first.
+  Expected: 404 { "error": "webhook not found" }
+}
+
+tests {
+  test("Unknown uuid returns 404", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+}

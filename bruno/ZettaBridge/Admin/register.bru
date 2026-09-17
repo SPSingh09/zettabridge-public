@@ -1,0 +1,33 @@
+meta {
+  name: POST Register Admin
+  type: http
+  seq: 0
+}
+
+post {
+  url: {{baseUrl}}/v1/auth/register
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "{{adminEmail}}",
+    "password": "{{adminPassword}}"
+  }
+}
+
+docs {
+  One-time setup. Creates the account that BOOTSTRAP_ADMIN_EMAIL will promote to admin.
+  Next: restart server, then POST Admin Login.
+}
+
+tests {
+  test("Status 201 or 409 if already registered", function() {
+    expect([201, 409]).to.include(res.getStatus());
+  });
+}

@@ -1,0 +1,33 @@
+meta {
+  name: POST Ingest Signal (CLOSE)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/v1/webhook/{{indianWebhookToken}}
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "action": "CLOSE",
+    "symbol": "SBIN",
+    "product": "MIS",
+    "order_type": "MARKET",
+    "comment": "my-secret-1"
+  }
+}
+
+tests {
+  test("Status 202 queued (not filled)", function() {
+    expect(res.getStatus()).to.equal(202);
+    const body = res.getBody();
+    expect(body.queued).to.equal(true);
+  });
+}

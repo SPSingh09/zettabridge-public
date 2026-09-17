@@ -1,0 +1,37 @@
+meta {
+  name: GET List Users — filter by email
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/v1/admin/users?page=1&limit=50&email={{filterEmail}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    const users = res.getBody().data?.users;
+    if (Array.isArray(users) && users.length > 0) {
+      const target = users.find((u) => u.role !== "admin") || users[0];
+      bru.setVar("targetUserId", target.id);
+      console.log("targetUserId saved:", target.id, "(" + target.email + ")");
+    }
+  }
+}
+
+docs {
+  Set {{filterEmail}} to a partial email match, e.g. trader (collection vars).
+  Auto-saves {{targetUserId}} from the first matching non-admin user.
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+}

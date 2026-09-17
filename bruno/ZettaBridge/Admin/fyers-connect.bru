@@ -1,0 +1,42 @@
+meta {
+  name: GET FYERS Connect (login URL)
+  type: http
+  seq: 36
+}
+
+get {
+  url: {{baseUrl}}/v1/admin/fyers/connect
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+docs {
+  Returns `{"redirect_url": "..."}` — a FYERS OAuth login URL signed with
+  this admin's identity in the `state` param. Open `redirect_url` in a real
+  browser, log into FYERS, and you'll be redirected back to
+  `GET /v1/admin/fyers/callback` (public endpoint, not in this collection
+  since FYERS calls it directly, not you) which exchanges the auth code for
+  an access/refresh token and redirects to
+  `{FRONTEND_URL}/admin/settings?fyers=connected`.
+
+  400 if `FYERS_APP_ID`/`FYERS_SECRET_ID`/`FYERS_CALLBACK_URL` aren't set in
+  the server environment — these are deploy-time app-registration values,
+  not admin-configurable (unlike the OAuth tokens themselves, which are
+  admin-connected via this flow and stored encrypted).
+
+  Login URL construction and the token-exchange endpoint are verified
+  against FYERS's own official `fyers-apiv3` Python SDK source — see
+  internal/integrations/brokers/fyers/auth package docs. The silent
+  refresh-token flow (fyers-pin.bru sets what it needs) is NOT in FYERS's
+  SDK and is best-effort.
+}
+
+tests {
+  test("Status 200 or 400 (depending on server FYERS config)", function() {
+    expect([200, 400]).to.include(res.getStatus());
+  });
+}

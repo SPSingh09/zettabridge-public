@@ -1,0 +1,44 @@
+meta {
+  name: Free tier — paper-only smoke
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/v1/me
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Walkthrough for **free** plan product testing (no live brokers):
+
+  1. Auth → POST Register + POST Login
+  2. **This request** — confirm `live_trading_allowed: false`, paper quota fields present
+  3. Credentials → POST Create Credential (live) — expect **403**
+  4. Paper Trading → create-account → create-webhook → ingest-buy → orders → pnl
+  5. After 10 paper trades in the month, free quota enforcement kicks in (see Failure Modes)
+
+  Paper trading is broker-free — no Zerodha/Angel/Dhan credential required.
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("Free plan blocks live trading", function() {
+    const d = res.getBody().data;
+    expect(d.plan).to.equal("free");
+    expect(d.live_trading_allowed).to.equal(false);
+    expect(d.max_broker_creds).to.equal(0);
+  });
+  test("Paper quota fields present", function() {
+    const d = res.getBody().data;
+    expect(d.max_paper_trades_per_month).to.equal(10);
+    expect(d.paper_trades_used_this_month).to.be.a("number");
+  });
+}

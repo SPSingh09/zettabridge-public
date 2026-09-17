@@ -1,0 +1,29 @@
+meta {
+  name: GET Paper Positions
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/v1/paper-accounts/{{paperAccountId}}/positions
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Run after ingest-buy + ingest-sell-partial + ingest-price-update + ingest-close
+  have settled (ORDER_SIGNAL is async, ~1s delay; PRICE_UPDATE is synchronous).
+  Expect one SBIN position: quantity 0, avg_entry_price 0, last_price 840,
+  unrealized_pnl 0 (fully closed by ingest-close, which overwrites the
+  intermediate mark from ingest-price-update).
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+}

@@ -1,0 +1,26 @@
+meta {
+  name: Admin — 400 invalid user id
+  type: http
+  seq: 23
+}
+
+get {
+  url: {{baseUrl}}/v1/admin/users/not-a-uuid
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+docs {
+  Prerequisite: Admin > POST Admin Login.
+  Expected: 400 { "error": "invalid user id" }
+}
+
+tests {
+  test("Invalid id returns 400", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+}

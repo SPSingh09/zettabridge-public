@@ -1,0 +1,46 @@
+meta {
+  name: PATCH Enable Org Creation
+  type: http
+  seq: 11
+}
+
+patch {
+  url: {{baseUrl}}/v1/admin/users/{{targetUserId}}
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+script:pre-request {
+  const id = bru.getVar("targetUserId");
+  if (!id || id.includes("{{")) {
+    throw new Error("targetUserId is not set. Run Admin > GET List Users first.");
+  }
+}
+
+body:json {
+  {
+    "orgs_enabled": true
+  }
+}
+
+docs {
+  Prerequisite: PUT Set User Plan → household, then run this.
+  Enables POST /v1/orgs for that user (admin-enabled org creation).
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("orgs_enabled is true", function() {
+    expect(res.getBody().data.orgs_enabled).to.equal(true);
+  });
+}

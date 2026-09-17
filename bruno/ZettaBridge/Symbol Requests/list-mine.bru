@@ -1,0 +1,26 @@
+meta {
+  name: GET List My Symbol Requests
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/v1/symbol-requests
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("Includes both created requests", function() {
+    const ids = res.getBody().data.map(r => r.id);
+    expect(ids).to.include(bru.getVar("symbolRequestId1"));
+    expect(ids).to.include(bru.getVar("symbolRequestId2"));
+  });
+}

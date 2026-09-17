@@ -1,0 +1,16 @@
+# Phase 3 overlay: Core routes live/paper execution to HTTP sidecars.
+# Usage: docker compose -f docker-compose.yml -f docker-compose.adapters.yml --profile adapters up
+services:
+  server:
+    environment:
+      EXECUTION_ADAPTER_MODE: "http"
+      ENABLED_ADAPTERS: "paper,zerodha"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      paper-adapter:
+        condition: service_started
+      zerodha-adapter:
+        condition: service_started

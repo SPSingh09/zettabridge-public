@@ -1,0 +1,35 @@
+meta {
+  name: PATCH Change Member Role
+  type: http
+  seq: 8
+}
+
+patch {
+  url: {{baseUrl}}/v1/orgs/{{orgId}}/members/{{memberUserId}}
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "role": "viewer"
+  }
+}
+
+docs {
+  Owner can assign admin/member/viewer. Admin can only change member/viewer.
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+}

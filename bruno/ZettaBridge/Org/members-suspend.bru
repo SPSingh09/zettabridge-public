@@ -1,0 +1,31 @@
+meta {
+  name: PATCH Suspend Member
+  type: http
+  seq: 9
+}
+
+patch {
+  url: {{baseUrl}}/v1/orgs/{{orgId}}/members/{{memberUserId}}
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "status": "suspended"
+  }
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+}

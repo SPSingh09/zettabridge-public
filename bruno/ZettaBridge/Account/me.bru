@@ -1,0 +1,48 @@
+meta {
+  name: GET Me
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/v1/me
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Returns authenticated user profile, plan, and resource limits.
+
+  **Plan limits:** `max_paper_accounts`, `max_paper_webhooks`, `max_live_webhooks`,
+  `max_broker_creds`, `live_trading_allowed`, `max_paper_trades_per_month` (null = unlimited).
+
+  **Usage:** `paper_webhooks_used`, `live_webhooks_used`, `paper_trades_used_this_month`,
+  `paper_trade_quota_exceeded`.
+
+  **Order rates:** `orders_per_sec`, `orders_per_sec_enforced`, `broker_cred_orders_per_sec`.
+
+  Verify tier caps with **Plans → GET Me — *-limits** after Admin sets plan.
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("Returns user id", function() {
+    expect(res.getBody().data.id).to.be.a("string");
+  });
+  test("Returns plan limit fields", function() {
+    const d = res.getBody().data;
+    expect(d.max_paper_accounts).to.be.a("number");
+    expect(d.max_paper_webhooks).to.be.a("number");
+    expect(d.max_live_webhooks).to.be.a("number");
+    expect(d.max_broker_creds).to.be.a("number");
+    expect(d.live_trading_allowed).to.be.a("boolean");
+    expect(d.orders_per_sec_enforced).to.be.at.least(1);
+    expect(d.broker_cred_orders_per_sec).to.equal(10);
+  });
+}

@@ -1,0 +1,35 @@
+meta {
+  name: GET Market Data Provider Setting
+  type: http
+  seq: 33
+}
+
+get {
+  url: {{baseUrl}}/v1/admin/settings/market-data-provider
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+docs {
+  Returns the currently active Paper Trading mark-to-market provider (Phase 6):
+  `provider` (the DB override if an admin has set one, else the
+  MARKET_DATA_PROVIDER env default), `available` (known provider names —
+  "signal" | "fyers"), and `fyers_configured` (whether FYERS_API_KEY /
+  FYERS_ACCESS_TOKEN are actually set — if false, selecting "fyers" is a
+  no-op until credentials exist).
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("Shape", function() {
+    const d = res.getBody().data;
+    expect(d).to.have.property("provider");
+    expect(d.available).to.include("signal").and.to.include("fyers");
+  });
+}

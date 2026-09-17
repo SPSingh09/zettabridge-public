@@ -1,0 +1,16 @@
+# Optional overlay — attach Prometheus to the ZettaBridge app network.
+# Enabled automatically by monitoring-up.sh when zettabridge_internal (or dev default) exists.
+#
+# Requires ZETTABRIDGE_DOCKER_NETWORK (e.g. zettabridge_internal on Lightsail VM).
+
+services:
+  prometheus:
+    # Keep `monitoring` (Grafana → prometheus:9090) AND join app network for scrape.
+    networks:
+      - monitoring
+      - zettabridge_app
+
+networks:
+  zettabridge_app:
+    external: true
+    name: ${ZETTABRIDGE_DOCKER_NETWORK:?set ZETTABRIDGE_DOCKER_NETWORK}

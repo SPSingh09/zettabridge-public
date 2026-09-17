@@ -1,0 +1,10 @@
+{
+  "status": "success",
+  "data": {
+    "equity": {
+      "available": {
+        "cash": 250000.50
+      }
+    }
+  }
+}

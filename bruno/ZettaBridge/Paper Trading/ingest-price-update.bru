@@ -1,0 +1,62 @@
+meta {
+  name: POST Ingest Signal (Paper PRICE_UPDATE)
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/v1/webhook/{{paperWebhookToken}}
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "comment": "paper-secret-1",
+    "type": "PRICE_UPDATE",
+    "symbol": "SBIN",
+    "price": 838
+  }
+}
+
+tests {
+  test("Status 200 (synchronous, not queued)", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("Marks the open position", function() {
+    const b = res.getBody();
+    expect(b.type).to.equal("PRICE_UPDATE");
+    expect(b.marked).to.equal(true);
+  });
+}
+
+docs {
+  Run after **ingest-sell-partial** (position is long 6 @ avg 821.5). Unlike
+  ORDER_SIGNAL, PRICE_UPDATE never touches the queue — it's applied
+  synchronously and returns 200 (not 202) immediately, with no `paper_orders`
+  or `paper_trades` row and no cash movement. It only updates `last_price` and
+  recomputes `unrealized_pnl` on the matching open position:
+  (838 - 821.5) * 6 = 99.
+
+  `marked` is `false` (not an error) when there's no open position for
+  `symbol` — e.g. run this against a flat account and it's a no-op 200.
+
+  Check Paper Trading → positions right after this (before running
+  ingest-close, which will overwrite last_price/unrealized_pnl with its own
+  fill) to see last_price 838 / unrealized_pnl 99.
+
+  **Deliberate design note:** PRICE_UPDATE is a universal manual override —
+  it works exactly the same regardless of which `MARKET_DATA_PROVIDER` is
+  configured (`signal` or `fyers`) and never checks that setting. If FYERS is
+  connected and has a live quote for this symbol, the mark you just set here
+  is transient — the next background sweep (`MARKET_DATA_SNAPSHOT_INTERVAL_SEC`,
+  default 45s) will overwrite it with the real FYERS price. If FYERS has no
+  quote yet (not connected, market closed), your manual value persists until
+  one does. This is intentional (confirmed 2026-07-04) — PRICE_UPDATE stays
+  available as a manual override/testing tool even with a real feed
+  configured, rather than being blocked or gated by the provider setting.
+}

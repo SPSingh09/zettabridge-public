@@ -1,0 +1,44 @@
+meta {
+  name: Signal - invalid type (400)
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/v1/webhook/{{paperWebhookToken}}
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "comment": "paper-secret-1",
+    "type": "BOGUS",
+    "symbol": "SBIN",
+    "action": "BUY",
+    "quantity": 5,
+    "price": 820.5
+  }
+}
+
+docs {
+  Prerequisite: Paper Trading → create-webhook (`paperWebhookToken` set).
+
+  Paper-destination webhooks require `type` to be exactly "ORDER_SIGNAL" or
+  "PRICE_UPDATE" — anything else is rejected at the HTTP layer synchronously
+  (400, not 202), unlike a bad `action`/missing `price` on a valid
+  ORDER_SIGNAL, which is accepted and rejected async by the queue worker.
+}
+
+tests {
+  test("Status 400", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+  test("Error names the two valid types", function() {
+    expect(res.getBody().error).to.include("ORDER_SIGNAL").and.to.include("PRICE_UPDATE");
+  });
+}

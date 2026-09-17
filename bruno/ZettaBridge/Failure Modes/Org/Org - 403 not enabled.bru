@@ -1,0 +1,36 @@
+meta {
+  name: Org — 403 orgs not enabled
+  type: http
+  seq: 30
+}
+
+post {
+  url: {{baseUrl}}/v1/orgs
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "name": "Should Fail"
+  }
+}
+
+docs {
+  Prerequisite: household user without orgs_enabled=true.
+  Expected: 403 organization creation is not enabled for this account
+}
+
+tests {
+  test("Blocked when orgs not enabled", function() {
+    expect(res.getStatus()).to.equal(403);
+  });
+}

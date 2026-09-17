@@ -1,0 +1,48 @@
+meta {
+  name: POST Accept Invite
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/v1/invites/accept
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "token": "{{inviteToken}}",
+    "password": "{{inviteePassword}}"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    const data = res.getBody().data;
+    bru.setVar("inviteeToken", data.token);
+    bru.setVar("memberUserId", data.user_id);
+    console.log("inviteeToken saved");
+  }
+}
+
+docs {
+  New user: password becomes account password.
+  Existing user: password must match existing account.
+  Returns JWT with org_id and org_role.
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("Returns org membership", function() {
+    const data = res.getBody().data;
+    expect(data.org_id).to.be.a("string");
+    expect(data.org_role).to.equal("member");
+  });
+}

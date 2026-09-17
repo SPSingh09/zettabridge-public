@@ -1,0 +1,41 @@
+meta {
+  name: PUT Re-enable Market Hours Enforcement (restore default)
+  type: http
+  seq: 19
+}
+
+put {
+  url: {{baseUrl}}/v1/admin/settings/market-hours-enforcement
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "enabled": true
+  }
+}
+
+docs {
+  Restores market-hours enforcement to its default (enabled) after this
+  folder's testing run — see disable-market-hours-for-testing.bru (seq 0)
+  for why it was turned off. Leaves the platform in its normal state for
+  other testers/real usage.
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("Enabled", function() {
+    expect(res.getBody().data.enabled).to.equal(true);
+  });
+}

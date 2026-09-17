@@ -1,0 +1,34 @@
+meta {
+  name: GET Org PnL
+  type: http
+  seq: 16
+}
+
+get {
+  url: {{baseUrl}}/v1/orgs/{{orgId}}/pnl
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Cross-webhook P&L rollup for the org (4A.1). Any active org member.
+
+  Same fields as webhook P&L; `org_id` set instead of `webhook_id`.
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("Org PnL summary shape", function() {
+    const p = res.getBody().data;
+    expect(p).to.have.property("trade_count");
+    expect(p).to.have.property("by_status");
+    expect(p.org_id).to.equal(bru.getVar("orgId"));
+  });
+}

@@ -1,0 +1,33 @@
+meta {
+  name: Signal — 401 unknown token after rotate
+  type: http
+  seq: 44
+}
+
+post {
+  url: {{baseUrl}}/v1/webhook/{{webhookTokenPrev}}
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "action": "BUY",
+    "symbol": "EURUSD"
+  }
+}
+
+docs {
+  Prerequisites: Webhooks → create → **rotate-token** (saves previous token as webhookTokenPrev).
+  Expected: 401 unknown token
+}
+
+tests {
+  test("Rotated-away token rejected", function() {
+    expect(res.getStatus()).to.equal(401);
+  });
+}

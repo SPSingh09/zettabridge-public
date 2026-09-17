@@ -1,0 +1,12 @@
+{
+  "status": true,
+  "message": "SUCCESS",
+  "errorcode": "",
+  "data": [
+    {
+      "exchange": "NSE",
+      "tradingsymbol": "RELIANCE-EQ",
+      "symboltoken": "2885"
+    }
+  ]
+}

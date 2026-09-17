@@ -1,0 +1,33 @@
+meta {
+  name: GET Publisher Callback (cancelled)
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/v1/publisher/callback?status=cancelled&state={{publisherState}}
+  body: none
+  auth: none
+}
+
+tests {
+  test("Cancellation accepted (200 or 302)", function() {
+    expect([200, 302]).to.include(res.getStatus());
+  });
+}
+
+docs {
+  Simulates Kite redirecting back after the user cancelled the basket form.
+
+  Kite appends: `?status=cancelled&state=<signed_state>`
+  No `request_token` on cancel.
+
+  The server validates `state` (HMAC + expiry), updates publisher order to `user_cancelled`,
+  and emits a USER_CANCELLED event. The trade status stays `pending_confirmation` — the
+  user is redirected to the frontend trade page where they can dismiss or try again.
+
+  **`publisherState`:** see publisher-callback-success docs — same extraction process.
+
+  If the order was already terminal (user_returned/user_cancelled/expired), the server
+  still redirects cleanly (idempotent).
+}

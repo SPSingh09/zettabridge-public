@@ -1,0 +1,46 @@
+meta {
+  name: GET FYERS Connection Status
+  type: http
+  seq: 35
+}
+
+get {
+  url: {{baseUrl}}/v1/admin/fyers/status
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+docs {
+  Status of the platform's single, admin-managed FYERS market-data
+  connection (never used for order placement). Fields:
+  - `app_configured`: FYERS_APP_ID/FYERS_SECRET_ID/FYERS_CALLBACK_URL are set
+    in the server environment (deploy-time, not admin-configurable).
+  - `connected`: an access token is on file *and* not past its expiry. A
+    token that exists but has expired (silent refresh failed/hasn't run)
+    reports `connected: false` here, not a stale `true` — see `token_expired`.
+  - `token_expired`: a token was stored at some point but `connected` is
+    false because it's past `access_token_expires_at` — distinguishes "never
+    connected" from "was connected, needs reconnecting" in the dashboard UI.
+  - `pin_set`: the FYERS trading PIN has been saved (needed for silent
+    refresh — see fyers-connect.bru docs).
+  - `access_token_expires_at` / `refresh_token_expires_at` / `connected_at`.
+
+  Tokens/PIN themselves are never returned — only booleans/timestamps.
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("Shape", function() {
+    const d = res.getBody().data;
+    expect(d).to.have.property("app_configured");
+    expect(d).to.have.property("connected");
+    expect(d).to.have.property("token_expired");
+    expect(d).to.have.property("pin_set");
+  });
+}

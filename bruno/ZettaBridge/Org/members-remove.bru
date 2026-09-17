@@ -1,0 +1,25 @@
+meta {
+  name: DELETE Remove Member
+  type: http
+  seq: 10
+}
+
+delete {
+  url: {{baseUrl}}/v1/orgs/{{orgId}}/members/{{memberUserId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Cannot remove owner. Admin can only remove member/viewer.
+}
+
+tests {
+  test("Status 204", function() {
+    expect(res.getStatus()).to.equal(204);
+  });
+}

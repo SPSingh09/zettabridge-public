@@ -1,0 +1,43 @@
+meta {
+  name: Signal - missing price (async reject)
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/v1/webhook/{{paperWebhookToken}}
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "comment": "paper-secret-1",
+    "type": "ORDER_SIGNAL",
+    "symbol": "SBIN",
+    "action": "BUY",
+    "quantity": 5
+  }
+}
+
+docs {
+  Prerequisite: Paper Trading → create-webhook; FYERS market data **not** connected (or signal-only provider).
+
+  No `price` on a MARKET/LIMIT ORDER_SIGNAL — ingest returns 202; worker rejects async.
+
+  When FYERS is connected, MARKET fills may succeed without price. Connect via Admin →
+  settings-market-data-provider-put + fyers-connect to test live-quote fills.
+
+  Check GET /v1/paper-accounts/:id/orders — expect REJECTED with price-required reason.
+}
+
+tests {
+  test("Ingest accepted (async reject)", function() {
+    expect(res.getStatus()).to.equal(202);
+    expect(res.getBody().queued).to.equal(true);
+  });
+}

@@ -1,0 +1,28 @@
+meta {
+  name: Signal — 401 unknown token
+  type: http
+  seq: 41
+}
+
+post {
+  url: {{baseUrl}}/v1/webhook/wh_live_invalid_token
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "action": "BUY",
+    "symbol": "EURUSD"
+  }
+}
+
+tests {
+  test("Unknown token rejected", function() {
+    expect(res.getStatus()).to.equal(401);
+  });
+}

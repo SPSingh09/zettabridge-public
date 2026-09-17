@@ -1,0 +1,46 @@
+meta {
+  name: POST Create Invite
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{baseUrl}}/v1/orgs/{{orgId}}/invites
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "email": "{{inviteeEmail}}",
+    "role": "member"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    const data = res.getBody().data;
+    bru.setVar("inviteToken", data.token);
+    bru.setVar("inviteId", data.id);
+    console.log("inviteToken saved (one-time)");
+  }
+}
+
+docs {
+  Owner/admin only. Token shown once — save {{inviteToken}} for accept flow.
+  Invitee can be free or individual; no household plan required.
+}
+
+tests {
+  test("Status 201", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+}

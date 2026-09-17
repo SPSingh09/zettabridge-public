@@ -1,0 +1,39 @@
+meta {
+  name: Paper Account - 409 delete while webhook attached
+  type: http
+  seq: 2
+}
+
+delete {
+  url: {{baseUrl}}/v1/paper-accounts/{{paperAccountId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Prerequisite: Paper Trading → create-account and create-webhook (webhook
+  still points at this account).
+
+  Found via manual testing: without this check, deleting the account would
+  trip the `webhooks_one_destination_check` CHECK constraint via the
+  `paper_account_id` FK's `ON DELETE SET NULL` (leaving the webhook with
+  neither destination set), surfacing as an opaque 500. The handler now
+  checks for referencing webhooks first, mirroring Credentials → delete's
+  same check for broker credentials.
+
+  Fix: delete the webhook first (Webhooks → DELETE Delete Webhook), then
+  retry Paper Trading → delete-account.
+}
+
+tests {
+  test("Status 409 (not 500)", function() {
+    expect(res.getStatus()).to.equal(409);
+  });
+  test("Error mentions webhook usage", function() {
+    expect(res.getBody().error).to.include("in use by one or more webhooks");
+  });
+}

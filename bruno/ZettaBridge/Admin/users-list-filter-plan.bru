@@ -1,0 +1,25 @@
+meta {
+  name: GET List Users — filter by plan
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/v1/admin/users?page=1&limit=50&plan={{filterPlan}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+docs {
+  Set {{filterPlan}} to free, paper, pro, or pro_plus (collection vars).
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+}

@@ -1,0 +1,25 @@
+meta {
+  name: Org — 404 non-member
+  type: http
+  seq: 32
+}
+
+get {
+  url: {{baseUrl}}/v1/orgs/00000000-0000-0000-0000-000000000000
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Expected: 404 org not found (does not leak org existence to non-members)
+}
+
+tests {
+  test("Non-member gets 404", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+}

@@ -1,0 +1,46 @@
+meta {
+  name: PUT Set Market Data Fetch Interval
+  type: http
+  seq: 39
+}
+
+put {
+  url: {{baseUrl}}/v1/admin/settings/market-data-interval
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "interval_seconds": 45
+  }
+}
+
+docs {
+  Changes the Paper Trading snapshot sweep cadence at runtime — no server
+  restart needed. `internal/marketdata.SnapshotJob` re-reads this setting
+  from platform_settings before every wait, so a change takes effect
+  starting with the next cycle.
+
+  `interval_seconds` must be between 5 and 3600 inclusive (400 otherwise) —
+  the floor guards against hammering the upstream provider (e.g. FYERS rate
+  limits) from a mistyped value, the ceiling keeps marks from going stale for
+  more than an hour.
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("Interval updated", function() {
+    expect(res.getBody().data.interval_seconds).to.equal(45);
+  });
+}

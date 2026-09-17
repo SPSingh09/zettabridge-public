@@ -1,0 +1,28 @@
+meta {
+  name: Trade Cancel — 422 already filled
+  type: http
+  seq: 50
+}
+
+delete {
+  url: {{baseUrl}}/v1/webhooks/{{webhookId}}/trades/{{tradeId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Prerequisite: `tradeId` must be the ID of a `filled` trade (run GET List Trades and pick one).
+  Expected: 422 "order already filled, use CLOSE signal"
+
+  Also covers `rejected`, `cancelled`, and `queued` statuses — all return 422 with a status-specific message.
+}
+
+tests {
+  test("Filled trade cancel returns 422", function() {
+    expect(res.getStatus()).to.equal(422);
+  });
+}

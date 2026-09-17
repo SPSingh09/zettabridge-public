@@ -1,0 +1,35 @@
+meta {
+  name: DELETE Instrument
+  type: http
+  seq: 45
+}
+
+delete {
+  url: {{baseUrl}}/v1/admin/instruments/{{instrumentId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+script:pre-request {
+  const id = bru.getVar("instrumentId");
+  if (!id || id.includes("{{")) {
+    throw new Error("instrumentId is not set. Run Admin > POST Create Instrument first.");
+  }
+}
+
+docs {
+  Cleans up the throwaway BRUNOTEST symbol created by POST Create Instrument.
+  Permanently deletes the instrument row (prefer deactivating via PATCH
+  active:false for a real, ever-traded symbol — see AdminDeleteInstrument's
+  doc comment).
+}
+
+tests {
+  test("Status 204", function() {
+    expect(res.getStatus()).to.equal(204);
+  });
+}

@@ -1,0 +1,21 @@
+meta {
+  name: Admin — 401 no JWT
+  type: http
+  seq: 21
+}
+
+get {
+  url: {{baseUrl}}/v1/admin/users
+  body: none
+  auth: none
+}
+
+docs {
+  Expected: 401 { "error": "invalid or missing token" }
+}
+
+tests {
+  test("Missing token blocked", function() {
+    expect(res.getStatus()).to.equal(401);
+  });
+}

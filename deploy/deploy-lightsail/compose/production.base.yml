@@ -1,0 +1,71 @@
+# Production-like stack — postgres + redis + server + dashboard on an internal network.
+# No Postgres/Redis ports exposed; use platform overlay (oci.staging.yml) for volumes/ports.
+#
+# Usage (from repo root):
+#   export POSTGRES_PASSWORD='...'
+#   docker compose -f deploy/compose/production.base.yml \
+#     -f deploy/compose/oci.staging.yml up -d
+#
+# Or: ./deploy/lightsail/deploy.sh up
+
+name: zettabridge
+
+services:
+  postgres:
+    image: postgres:16-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: zettabridge
+      POSTGRES_USER: zettabridge
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in env or .env file}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zettabridge -d zettabridge"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - internal
+
+  redis:
+    image: redis:7-bookworm
+    restart: unless-stopped
+    command: redis-server --save "" --appendonly no
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+
+  server:
+    image: ${ZETTABRIDGE_IMAGE:-zettabridge:staging}
+    restart: unless-stopped
+    environment:
+      PORT: "8080"
+      DATABASE_URL: postgres://zettabridge:${POSTGRES_PASSWORD}@postgres:5432/zettabridge?sslmode=disable
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - internal
+
+  dashboard:
+    image: ${ZETTABRIDGE_DASHBOARD_IMAGE:-ghcr.io/spsingh09/zettabridge-dashboard:staging}
+    restart: unless-stopped
+    depends_on:
+      - server
+    networks:
+      - internal
+
+networks:
+  internal:
+    driver: bridge
+
+volumes:
+  pgdata:

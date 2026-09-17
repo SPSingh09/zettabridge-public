@@ -1,0 +1,55 @@
+meta {
+  name: POST Create Paper Account
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/v1/paper-accounts
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "label": "My Indian paper account",
+    "starting_balance": 100000,
+    "exchange": "NSE",
+    "default_product": "MIS"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("paperAccountId", res.getBody().data.id);
+    console.log("paperAccountId saved");
+  }
+}
+
+docs {
+  Plan-based caps — see /v1/me → max_paper_accounts (free: 1, paper: 3, pro: 5, pro_plus: 10).
+  Optional `market_profile` (defaults to indian_equity).
+}
+
+tests {
+  test("Status 201", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+  test("Account created with starting balance as cash balance", function() {
+    const data = res.getBody().data;
+    expect(data.id).to.be.a("string");
+    expect(data.market_profile).to.equal("indian_equity");
+    expect(data.base_currency).to.equal("INR");
+    expect(data.starting_balance).to.equal(100000);
+    expect(data.cash_balance).to.equal(100000);
+    expect(data.status).to.equal("active");
+  });
+}

@@ -1,0 +1,48 @@
+meta {
+  name: GET Paper Account PnL
+  type: http
+  seq: 12
+}
+
+get {
+  url: {{baseUrl}}/v1/paper-accounts/{{paperAccountId}}/pnl
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Dashboard metrics rollup. `equity = starting_balance + realized_pnl + unrealized_pnl`
+  (computed on the fly from current state — the Phase 6 background job writes
+  point-in-time history to `paper_account_snapshots` separately, see
+  snapshots.bru, but doesn't change how this endpoint computes numbers).
+  `win_rate` uses paper trades' exact `realized_pnl` field (realized_pnl > 0 /
+  < 0), unlike live trading's FIFO fill-price approximation in Webhooks → pnl.
+
+  After ingest-buy (BUY 10@821.5) + ingest-sell-partial (SELL 4@835) +
+  ingest-close (CLOSE 6@840), expect: cash_balance 100165, equity 100165,
+  realized_pnl 165 (54 + 111), unrealized_pnl 0 (flat), total_pnl 165,
+  trade_count 3, fill_rate 1, win_rate 1, notional 16595
+  (10*821.5 + 4*835 + 6*840). ingest-price-update in between has no effect on
+  any of these numbers — PRICE_UPDATE never touches cash_balance,
+  realized_pnl, trade_count, or notional, only a position's unrealized_pnl
+  (and even that is overwritten once ingest-close fills).
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("PnL summary shape", function() {
+    const p = res.getBody().data;
+    expect(p).to.have.property("equity");
+    expect(p).to.have.property("realized_pnl");
+    expect(p).to.have.property("unrealized_pnl");
+    expect(p).to.have.property("total_pnl");
+    expect(p).to.have.property("notional");
+    expect(p.paper_account_id).to.equal(bru.getVar("paperAccountId"));
+  });
+}

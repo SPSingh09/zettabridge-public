@@ -1,0 +1,37 @@
+meta {
+  name: Webhooks — 400 immutable field
+  type: http
+  seq: 42
+}
+
+put {
+  url: {{baseUrl}}/v1/webhooks/{{webhookId}}
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "token": "cannot-change-me"
+  }
+}
+
+docs {
+  Prerequisite: Webhooks → create (webhookId set).
+  `token` must be rotated via POST /v1/webhooks/:id/rotate-token.
+}
+
+tests {
+  test("Immutable token field rejected", function() {
+    expect(res.getStatus()).to.equal(400);
+    expect(res.getBody().error).to.include("token cannot be updated");
+  });
+}

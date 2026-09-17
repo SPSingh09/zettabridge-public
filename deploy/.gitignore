@@ -1,0 +1,10 @@
+# Private runtime env (never commit secrets)
+env/*.env
+env/oci.staging.env
+env/aws.staging.env
+env/ghcr.env
+env/monitoring.env
+monitoring/rendered/
+deploy-aws-ecs/staging-aws.env
+loadtest/env.local
+loadtest/results/*.json

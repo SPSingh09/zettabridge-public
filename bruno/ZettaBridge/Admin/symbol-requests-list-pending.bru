@@ -1,0 +1,32 @@
+meta {
+  name: GET List Pending Symbol Requests
+  type: http
+  seq: 46
+}
+
+get {
+  url: {{baseUrl}}/v1/admin/symbol-requests?status=pending
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+docs {
+  Powers the dashboard's admin-only pending-requests banner. Run the
+  Symbol Requests folder (both create-request-*.bru) before Admin/login.bru
+  in the same invocation, since that login overwrites {{token}}.
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("Includes both pending requests", function() {
+    const ids = res.getBody().data.map(r => r.id);
+    expect(ids).to.include(bru.getVar("symbolRequestId1"));
+    expect(ids).to.include(bru.getVar("symbolRequestId2"));
+  });
+}

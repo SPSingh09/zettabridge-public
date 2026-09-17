@@ -1,0 +1,30 @@
+meta {
+  name: Webhook Delete — 404 wrong id (token)
+  type: http
+  seq: 1
+}
+
+delete {
+  url: {{baseUrl}}/v1/webhooks/{{webhookToken}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Common mistake: using webhook **token** (wh_live_...) instead of webhook **id** (UUID).
+  Prerequisite: run Auth > Login and Webhooks > Create Webhook first.
+  Expected: 404 { "error": "webhook not found" }
+}
+
+tests {
+  test("Wrong id returns 404", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+  test("Error message present", function() {
+    expect(res.getBody().error).to.equal("webhook not found");
+  });
+}

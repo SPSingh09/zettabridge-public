@@ -1,0 +1,29 @@
+meta {
+  name: Symbol Requests
+  seq: 13
+}
+
+docs {
+  User-facing "request a symbol be added" flow, surfaced from Paper Trading's
+  "unknown or inactive symbol" rejection:
+  - POST /v1/symbol-requests
+  - GET  /v1/symbol-requests
+
+  Admin review (accept/reject/list) lives in the Admin folder's
+  symbol-requests-*.bru files — accepting a request doesn't resolve it by
+  itself; resolution happens automatically the moment a matching instrument
+  is created (Admin > POST Create Instrument), which is exercised there too.
+
+  **Run this folder before Admin/login.bru in the same invocation** — that
+  request overwrites {{token}} with the admin's token, so the regular-user
+  requests here (which use {{token}}) must run first:
+    npx @usebruno/cli run "Auth/login.bru" -r "Symbol Requests" -r "Admin/login.bru" -r "Admin" --env local
+
+  **Key facts:**
+  - `market_profile_code` must reference an existing, active market profile
+    (e.g. `indian_equity`) — reason is required.
+  - A user can only have one active (pending/accepted) request per
+    profile+symbol — a second attempt 409s (see duplicate-rejected.bru).
+  - Status: pending -> accepted -> resolved (auto), or pending/accepted ->
+    rejected.
+}

@@ -1,0 +1,37 @@
+meta {
+  name: GET Org Usage
+  type: http
+  seq: 16
+}
+
+get {
+  url: {{baseUrl}}/v1/orgs/{{orgId}}/usage
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Owner/admin only. Seats, webhooks, credentials, trade volume, order rate limits.
+
+  Household org: `orders_per_sec` is null (unlimited aggregate); `orders_per_sec_per_user` is 0 (unlimited per user).
+  `broker_cred_orders_per_sec` is 10. `max_webhooks` = 5×seat_limit, `max_broker_creds` = 3×seat_limit.
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("Household org unlimited aggregate", function() {
+    expect(res.getBody().data.orders_per_sec).to.equal(null);
+  });
+  test("Per-user cap is unlimited (0)", function() {
+    expect(res.getBody().data.orders_per_sec_per_user).to.equal(0);
+  });
+  test("Per broker cred cap is 10", function() {
+    expect(res.getBody().data.broker_cred_orders_per_sec).to.equal(10);
+  });
+}

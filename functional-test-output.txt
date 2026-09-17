@@ -1,0 +1,157 @@
+bash functional-tester/run-functional-tests.sh
+ Container zettabridge-postgres-1 Running 
+ Container zettabridge-redis-1 Running 
+Wiping database schema for a clean migration run...
+NOTICE:  drop cascades to 29 other objects
+DETAIL:  drop cascades to table schema_migrations
+drop cascades to extension pgcrypto
+drop cascades to table users
+drop cascades to table broker_credentials
+drop cascades to table webhooks
+drop cascades to table trades
+drop cascades to table refresh_tokens
+drop cascades to table organizations
+drop cascades to table org_members
+drop cascades to table org_invites
+drop cascades to table org_audit_log
+drop cascades to table email_verifications
+drop cascades to table stripe_webhook_events
+drop cascades to table platform_invites
+drop cascades to table user_audit_log
+drop cascades to table ingest_log
+drop cascades to table notifications
+drop cascades to table publisher_orders
+drop cascades to table publisher_order_events
+drop cascades to table paper_accounts
+drop cascades to table paper_orders
+drop cascades to table paper_positions
+drop cascades to table paper_trades
+drop cascades to table paper_account_snapshots
+drop cascades to table platform_settings
+drop cascades to table fyers_connection
+drop cascades to table market_profiles
+drop cascades to table instruments
+drop cascades to table symbol_requests
+Rebuilding and restarting server (applies embedded migrations on startup)...
+ Image zettabridge-server Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 562B done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 953B done
+#2 DONE 0.0s
+
+#3 resolve image config for docker-image://docker.io/docker/dockerfile:1
+#3 DONE 1.2s
+
+#4 docker-image://docker.io/docker/dockerfile:1@sha256:87999aa3d42bdc6bea60565083ee17e86d1f3339802f543c0d03998580f9cb89
+#4 resolve docker.io/docker/dockerfile:1@sha256:87999aa3d42bdc6bea60565083ee17e86d1f3339802f543c0d03998580f9cb89 0.1s done
+#4 CACHED
+
+#5 [internal] load metadata for docker.io/library/golang:1.25-bookworm
+#5 DONE 1.2s
+
+#6 [internal] load metadata for docker.io/library/ubuntu:24.04
+#6 DONE 1.2s
+
+#7 [internal] load .dockerignore
+#7 transferring context: 2B done
+#7 DONE 0.0s
+
+#8 [builder 1/6] FROM docker.io/library/golang:1.25-bookworm@sha256:b96f24a8d7d010ea0acb9c3ba99064740f02b6b984612b28bd3c9c5ab9453e38
+#8 resolve docker.io/library/golang:1.25-bookworm@sha256:b96f24a8d7d010ea0acb9c3ba99064740f02b6b984612b28bd3c9c5ab9453e38 0.1s done
+#8 DONE 0.1s
+
+#9 [stage-1 1/3] FROM docker.io/library/ubuntu:24.04@sha256:4fbb8e6a8395de5a7550b33509421a2bafbc0aab6c06ba2cef9ebffbc7092d90
+#9 resolve docker.io/library/ubuntu:24.04@sha256:4fbb8e6a8395de5a7550b33509421a2bafbc0aab6c06ba2cef9ebffbc7092d90 0.1s done
+#9 DONE 0.1s
+
+#10 [internal] load build context
+#10 transferring context: 2.38MB 2.0s done
+#10 DONE 2.1s
+
+#11 [builder 2/6] WORKDIR /app
+#11 CACHED
+
+#12 [builder 3/6] COPY go.mod go.sum* ./
+#12 CACHED
+
+#13 [builder 4/6] RUN go mod download
+#13 CACHED
+
+#14 [builder 5/6] COPY . .
+#14 DONE 14.0s
+
+#15 [builder 6/6] RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64     go build -ldflags="-s -w" -o /zettabridge ./cmd/api
+#15 DONE 64.1s
+
+#16 [stage-1 2/3] RUN apt-get update     && apt-get install -y --no-install-recommends ca-certificates wget tzdata     && rm -rf /var/lib/apt/lists/*
+#16 CACHED
+
+#17 [stage-1 3/3] COPY --from=builder /zettabridge /zettabridge
+#17 CACHED
+
+#18 exporting to image
+#18 exporting layers done
+#18 exporting manifest sha256:937580347ca208346987184ee1e99a1b29a543cca170b309f6265ea81329c895 done
+#18 exporting config sha256:82005929a7ddef678a39913020e1926e48a527ca90357bcd6ead2d7b96794d4f done
+#18 exporting attestation manifest sha256:3dc387bb96ade6f47cbfe27f92c736846554fb1db15dc3834afc979af2f5f060 0.1s done
+#18 exporting manifest list sha256:bfa042c609acf38b62cfd841efbe25dd0547b59662614951c22dac2a9a5f0b85
+#18 exporting manifest list sha256:bfa042c609acf38b62cfd841efbe25dd0547b59662614951c22dac2a9a5f0b85 0.0s done
+#18 naming to docker.io/library/zettabridge-server:latest 0.0s done
+#18 unpacking to docker.io/library/zettabridge-server:latest 0.0s done
+#18 DONE 0.2s
+
+#19 resolving provenance for metadata file
+#19 DONE 0.1s
+ Image zettabridge-server Built 
+ Container zettabridge-redis-1 Running 
+ Container zettabridge-postgres-1 Running 
+ Container zettabridge-server-1 Recreate 
+ Container zettabridge-server-1 Recreated 
+ Container zettabridge-postgres-1 Waiting 
+ Container zettabridge-redis-1 Waiting 
+ Container zettabridge-redis-1 Healthy 
+ Container zettabridge-postgres-1 Healthy 
+ Container zettabridge-server-1 Starting 
+ Container zettabridge-server-1 Started 
+=== RUN   TestFunctionalAPI
+=== RUN   TestFunctionalAPI/health
+=== RUN   TestFunctionalAPI/auth_and_personal_resources
+=== RUN   TestFunctionalAPI/platform_invites_(closed_beta)
+    functional_test.go:260: server open registration: skipping invite enforcement assertions
+=== RUN   TestFunctionalAPI/bracket_orders_(SL/TP)
+=== RUN   TestFunctionalAPI/cancel_order
+=== RUN   TestFunctionalAPI/admin_user_management
+--- PASS: TestFunctionalAPI (5.20s)
+    --- PASS: TestFunctionalAPI/health (0.00s)
+    --- PASS: TestFunctionalAPI/auth_and_personal_resources (1.40s)
+    --- PASS: TestFunctionalAPI/platform_invites_(closed_beta) (0.23s)
+    --- PASS: TestFunctionalAPI/bracket_orders_(SL/TP) (1.85s)
+    --- PASS: TestFunctionalAPI/cancel_order (1.52s)
+    --- PASS: TestFunctionalAPI/admin_user_management (0.18s)
+=== RUN   TestBillingDisabled
+=== RUN   TestBillingDisabled/plans_catalog
+=== RUN   TestBillingDisabled/checkout_and_portal_disabled
+=== RUN   TestBillingDisabled/stripe_webhook_disabled
+=== RUN   TestBillingDisabled/admin_plan_sets_billing_source_admin
+--- PASS: TestBillingDisabled (0.27s)
+    --- PASS: TestBillingDisabled/plans_catalog (0.00s)
+    --- PASS: TestBillingDisabled/checkout_and_portal_disabled (0.00s)
+    --- PASS: TestBillingDisabled/stripe_webhook_disabled (0.00s)
+    --- PASS: TestBillingDisabled/admin_plan_sets_billing_source_admin (0.05s)
+=== RUN   TestBillingStripeWebhooks
+    functional_test_billing_test.go:103: set FUNCTIONAL_TEST_BILLING=1 with billing overlay (make functional-test-billing)
+--- SKIP: TestBillingStripeWebhooks (0.00s)
+=== RUN   TestBillingStripeCheckoutOptional
+    functional_test_billing_test.go:241: set FUNCTIONAL_TEST_BILLING_CHECKOUT=1 with real sk_test_* and price IDs (see docs/testing.md)
+--- SKIP: TestBillingStripeCheckoutOptional (0.00s)
+=== RUN   TestEmailVerificationFlow
+    functional_test_email_verify_test.go:14: set FUNCTIONAL_TEST_EMAIL_VERIFY=1 with server EMAIL_VERIFICATION_REQUIRED=true (see docs/plans/email-verification.md)
+--- SKIP: TestEmailVerificationFlow (0.00s)
+=== RUN   TestFreeUserBlockedFromLiveWhenBrokerLive
+    functional_test_live_routing_test.go:18: set FUNCTIONAL_TEST_LIVE_ROUTING=1 with BROKER_MODE=live server (make functional-test-live-routing)
+--- SKIP: TestFreeUserBlockedFromLiveWhenBrokerLive (0.00s)
+PASS
+ok  	github.com/SPSingh09/zettabridge/functional-tester	5.470s

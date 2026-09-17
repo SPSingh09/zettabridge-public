@@ -1,0 +1,36 @@
+meta {
+  name: GET List Paper Accounts
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/v1/paper-accounts
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    const rows = res.getBody().data;
+    if (Array.isArray(rows) && rows.length > 0) {
+      bru.setVar("paperAccountId", rows[0].id);
+      console.log("paperAccountId saved from list:", rows[0].id);
+    }
+  }
+}
+
+docs {
+  Returns all paper accounts owned by the caller (solo-only — no org scoping yet).
+  Auto-saves {{paperAccountId}} from the first account.
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+}

@@ -1,0 +1,26 @@
+meta {
+  name: Admin — 403 non-admin JWT
+  type: http
+  seq: 20
+}
+
+get {
+  url: {{baseUrl}}/v1/admin/users
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Prerequisite: login as regular user (Auth > POST Login), not Admin Login.
+  Expected: 403 { "error": "platform admin access required" }
+}
+
+tests {
+  test("Non-admin blocked", function() {
+    expect(res.getStatus()).to.equal(403);
+  });
+}

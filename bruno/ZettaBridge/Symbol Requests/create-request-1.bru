@@ -1,0 +1,52 @@
+meta {
+  name: POST Create Symbol Request (1)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/v1/symbol-requests
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "market_profile_code": "indian_equity",
+    "exchange": "NSE",
+    "symbol": "BRUNOSYM1",
+    "reason": "I trade this on TradingView and want to paper-trade it here too."
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("symbolRequestId1", res.getBody().data.id);
+    console.log("symbolRequestId1 saved: " + res.getBody().data.id);
+  }
+}
+
+docs {
+  Run Auth/login.bru first so {{token}} is set. This request is accepted,
+  then resolved via Admin > POST Create Instrument (For Symbol Request).
+}
+
+tests {
+  test("Status 201", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+  test("Returns pending request", function() {
+    const d = res.getBody().data;
+    expect(d.symbol).to.equal("BRUNOSYM1");
+    expect(d.status).to.equal("pending");
+    expect(d.id).to.be.a("string");
+  });
+}

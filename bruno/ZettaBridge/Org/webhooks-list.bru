@@ -1,0 +1,25 @@
+meta {
+  name: GET Org Webhooks
+  type: http
+  seq: 14
+}
+
+get {
+  url: {{baseUrl}}/v1/orgs/{{orgId}}/webhooks
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Org-scoped webhook list (org_id set). Any active org member.
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+}

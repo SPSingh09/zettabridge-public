@@ -1,0 +1,63 @@
+meta {
+  name: POST Create Webhook (Indian equity)
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/v1/webhooks
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "label": "RELIANCE MIS",
+    "broker_cred_id": "{{credId}}",
+    "symbol": "RELIANCE",
+    "lot_size": 1,
+    "max_risk_pct": 0,
+    "sl_points": 10,
+    "tp_points": 15,
+    "default_order_type": "MARKET"
+  }
+}
+
+docs {
+  Use with an Indian broker credential (`zerodha`, `angel`, or `dhan`) that has `exchange` set (NSE/BSE).
+  Prerequisite: Credentials → create-zerodha (or create-angel / create-dhan) → verify.
+  Symbol guide: `docs/broker-guide.md#symbol-conventions`.
+
+  `default_order_type: MARKET` is explicit here (rather than relying on the
+  backend's own LIMIT default) because every signal that targets
+  `indianWebhookToken` in this collection sends `"order_type": "MARKET"` —
+  since a signal's order_type must now match the webhook's configured type
+  or the whole request is rejected (see guard.ValidateOrderType). For a
+  LIMIT-order demonstration, use `create-indian-limit.bru` /
+  `indianLimitWebhookToken` instead.
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    const data = res.getBody().data;
+    bru.setVar("indianWebhookId", data.id);
+    bru.setVar("indianWebhookToken", data.token);
+  }
+}
+
+tests {
+  test("Indian equity webhook created", function() {
+    expect(res.getStatus()).to.equal(201);
+    const data = res.getBody().data;
+    expect(data.symbol).to.equal("RELIANCE");
+    expect(data.token).to.be.a("string");
+  });
+}

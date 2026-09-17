@@ -1,0 +1,62 @@
+meta {
+  name: GET List Trades
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/v1/webhooks/{{webhookId}}/trades
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Returns last 100 trades for the webhook. Audit fields: `comment`, `signal_key`, `broker_order`, `error_code`.
+  See repo `docs/audit-trail.md`.
+}
+
+tests {
+  test("Trade list allows valid statuses", function() {
+    expect(res.getStatus()).to.equal(200);
+    const trades = res.getBody().data;
+    if (trades.length > 0) {
+      expect(["queued", "submitted", "filled", "rejected", "cancelled", "pending_confirmation"]).to.include(trades[0].status);
+    }
+  });
+
+  test("Publisher trades have broker_order and link to trade detail", function() {
+    const trades = res.getBody().data;
+    const pending = trades.find((t) => t.status === "pending_confirmation");
+    if (pending) {
+      expect(pending.broker_order).to.be.a("string");
+      bru.setVar("tradeId", pending.id);
+      bru.setVar("publisherOrderId", pending.broker_order);
+      console.log("tradeId saved:", pending.id);
+      console.log("publisherOrderId saved:", pending.broker_order);
+    }
+  });
+
+  test("Submitted trades may include comment and signal_key", function() {
+    const trades = res.getBody().data;
+    const submitted = trades.find((t) => t.status === "submitted");
+    if (submitted && submitted.comment) {
+      expect(submitted.comment).to.be.a("string");
+    }
+    if (submitted && submitted.signal_key) {
+      expect(submitted.signal_key).to.be.a("string");
+    }
+  });
+
+  test("Rejected trades may include error_code", function() {
+    const trades = res.getBody().data;
+    const rejected = trades.find((t) => t.status === "rejected");
+    if (rejected) {
+      expect(rejected).to.have.property("error_code");
+      expect(rejected).to.have.property("error");
+    }
+  });
+}

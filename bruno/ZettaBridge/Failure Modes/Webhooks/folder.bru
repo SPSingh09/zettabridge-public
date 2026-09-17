@@ -1,0 +1,10 @@
+meta {
+  name: Webhooks
+  seq: 5
+}
+
+docs {
+  Failure modes for /v1/webhooks/* endpoints.
+  Covers: immutable field on PUT, free-tier P&L access, webhook delete auth errors,
+  delete 404 (wrong ID), delete after signal, trade cancel 404/422.
+}

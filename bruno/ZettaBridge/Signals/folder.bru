@@ -1,0 +1,15 @@
+meta {
+  name: Signals
+  seq: 8
+}
+
+docs {
+  Public signal ingestion (token in URL, no JWT):
+  - POST /v1/webhook/:token  (BUY / SELL / CLOSE)
+
+  **Live Indian equity:** Webhooks → create-indian → ingest-indian-buy (include `price`)
+  **Pro Plus multi-product:** add `"product": "MIS"|"CNC"|"NRML"` — see ingest-indian-cnc
+  **Forex (MT5):** Webhooks → create → ingest-buy / ingest-sell / ingest-close
+
+  Paper-destination webhooks use the **Paper Trading** folder typed payloads instead.
+}

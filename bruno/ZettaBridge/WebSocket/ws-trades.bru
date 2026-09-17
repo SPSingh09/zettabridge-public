@@ -1,0 +1,23 @@
+meta {
+  name: WS Trades Stream
+  type: ws
+  seq: 1
+}
+
+ws {
+  url: {{wsUrl}}
+}
+
+docs {
+  Subscribe to live trade inserts. Set collection/env var **wsUrl**, e.g.:
+
+  `ws://localhost:8080/v1/ws/trades?token={{token}}`
+
+  After Connect, run **Signals → ingest-buy** in another tab; expect JSON:
+
+  ```json
+  { "type": "trade", "trade": { "id": "...", "webhook_id": "...", "status": "..." } }
+  ```
+
+  Revoked JWTs are rejected on upgrade (401).
+}

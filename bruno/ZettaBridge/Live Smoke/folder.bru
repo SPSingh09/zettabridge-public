@@ -1,0 +1,27 @@
+meta {
+  name: Live Smoke
+  seq: 12
+}
+
+docs {
+  **Manual live-broker smoke tests** — run only when the server has `BROKER_MODE=live` and real broker credentials.
+
+  ## Prerequisites
+  1. Deploy or run locally: `docker compose -f docker-compose.yml -f docker-compose.live.yml up`
+  2. Pro+ user with `account_mode: live` credentials (never commit tokens to git)
+  3. Static egress IP whitelisted at Dhan / Angel (see `docs/deploy-production.md`)
+  4. Set collection vars: `token`, `credId`, `webhookToken` from prior create steps
+
+  ## Smoke checklist (run in order)
+  1. **Health** — GET /healthz → 200
+  2. **Verify** — POST /v1/credentials/:id/verify → `{ valid: true }` for each broker
+  3. **Ingest** — POST /v1/webhook/:token BUY → 202 queued
+  4. **Trades** — GET /v1/webhooks/:id/trades → `submitted` (or broker-specific status)
+
+  ## On failure
+  - Verify returns `valid: false` → read `hint` and re-PUT `raw_creds`
+  - Trade `rejected` + `auth_failed` → refresh broker session token
+  - Trade `rejected` + `invalid_symbol` → check exchange/symbol on credential + webhook
+
+  Automated CI uses `BROKER_MODE=mock` — these requests are for staging/production manual QA only.
+}

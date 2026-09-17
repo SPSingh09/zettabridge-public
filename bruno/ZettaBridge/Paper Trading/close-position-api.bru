@@ -1,0 +1,50 @@
+meta {
+  name: POST Close Position (API)
+  type: http
+  seq: 15
+}
+
+post {
+  url: {{baseUrl}}/v1/paper-accounts/{{paperAccountId}}/positions/close
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+script:pre-request {
+  // Let close-position-ingest-buy.bru's async fill settle before closing it.
+  const start = Date.now();
+  while (Date.now() - start < 1100) { /* spin */ }
+}
+
+body:json {
+  {
+    "symbol": "INFY"
+  }
+}
+
+docs {
+  The dashboard's "Close" button on the Positions card calls this endpoint —
+  synchronous (no webhook/queue involved), closes at the position's
+  last_price (here, the BUY fill price from close-position-ingest-buy.bru,
+  since no PRICE_UPDATE was sent for INFY). Side/quantity are computed by
+  the paper engine itself from the existing position.
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("Filled at the last known price", function() {
+    const d = res.getBody().data;
+    expect(d.status).to.equal("FILLED");
+    expect(d.fill_price).to.equal(1500);
+  });
+}

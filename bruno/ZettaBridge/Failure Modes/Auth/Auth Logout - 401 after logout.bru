@@ -1,0 +1,26 @@
+meta {
+  name: Auth — 401 admin route after logout
+  type: http
+  seq: 43
+}
+
+get {
+  url: {{baseUrl}}/v1/admin/users?page=1&limit=1
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+docs {
+  Prerequisite: Admin > POST Admin Logout first.
+  Expected: 401 token revoked (or invalid/missing if token var was cleared).
+}
+
+tests {
+  test("Revoked token rejected", function() {
+    expect(res.getStatus()).to.equal(401);
+  });
+}

@@ -1,0 +1,45 @@
+meta {
+  name: PUT Set FYERS PIN
+  type: http
+  seq: 37
+}
+
+put {
+  url: {{baseUrl}}/v1/admin/fyers/pin
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "pin": "1234"
+  }
+}
+
+docs {
+  Stores your FYERS trading PIN, encrypted at rest (same AES-256-GCM
+  mechanism used for broker credentials — internal/platform/crypto).
+
+  Only used by the background silent-refresh job
+  (internal/integrations/brokers/fyers/refresh) when the access token is
+  close to expiry — this flow is FYERS-undocumented/best-effort (see
+  fyers-connect.bru docs). If it fails, you'll be emailed/Telegrammed to
+  reconnect manually via fyers-connect.bru's login URL instead.
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("pin_set true", function() {
+    expect(res.getBody().data.pin_set).to.equal(true);
+  });
+}

@@ -1,0 +1,40 @@
+meta {
+  name: GET List Members
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/v1/orgs/{{orgId}}/members
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    const members = res.getBody().data;
+    if (!Array.isArray(members) || members.length === 0) {
+      return;
+    }
+    const inviteeEmail = bru.getVar("inviteeEmail");
+    const invitee = inviteeEmail
+      ? members.find((m) => m.email === inviteeEmail)
+      : null;
+    const nonOwner = members.find((m) => m.role !== "owner");
+    const pick = invitee || nonOwner || members[0];
+    if (pick && pick.user_id) {
+      bru.setVar("memberUserId", pick.user_id);
+      console.log("memberUserId saved:", pick.user_id, pick.email);
+    }
+  }
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+}

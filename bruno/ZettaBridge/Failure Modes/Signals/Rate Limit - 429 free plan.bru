@@ -1,0 +1,59 @@
+meta {
+  name: Signal — 429 rate limit (free plan, >1 order/sec)
+  type: http
+  seq: 46
+}
+
+post {
+  url: {{baseUrl}}/v1/webhook/{{webhookToken}}
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "action": "BUY",
+    "symbol": "RELIANCE",
+    "lot": 1,
+    "comment": "rate-limit-test"
+  }
+}
+
+docs {
+  Verifies the 1 order/sec enforcement for free-plan users (§5).
+
+  Prerequisites:
+  1. The webhook must belong to a FREE-plan user (no admin upgrade).
+  2. Set {{webhookToken}} to a webhook owned by a free-plan user.
+
+  How to trigger the 429:
+  - Send this request twice within 1 second (use Bruno's "Run" twice rapidly,
+    or use the k6 rate-limit-enforce.js load test script).
+  - First request:  202 Accepted  { "queued": true }
+  - Second request within 1s: 429 Too Many Requests
+
+  The 429 body contains:
+  { "error": "rate_limited", "retry_after": <seconds> }
+
+  For paid plans (paper / pro / pro_plus), enforced cap is 5–10 orders/sec per user.
+  Use the k6 script at deploy/loadtest/k6/rate-limit-enforce.js to load-test
+  the 10/sec cap (requires a paid-plan webhook token and LOADTEST_PLAN=paid).
+}
+
+tests {
+  test("202 or 429 (depending on send frequency)", function() {
+    expect([202, 429]).to.include(res.getStatus());
+  });
+  test("queued or rate_limited in body", function() {
+    const status = res.getStatus();
+    if (status === 202) {
+      expect(res.getBody().queued).to.equal(true);
+    } else if (status === 429) {
+      expect(res.getBody().error).to.equal("rate_limited");
+    }
+  });
+}

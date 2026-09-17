@@ -1,0 +1,35 @@
+meta {
+  name: Billing - 503 checkout disabled
+  type: http
+  seq: 50
+}
+
+post {
+  url: {{baseUrl}}/v1/billing/checkout
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "plan": "pro"
+  }
+}
+
+docs {
+  Default local docker has BILLING_ENABLED=false → 503 billing is not enabled.
+}
+
+tests {
+  test("Status 503 when billing disabled", function() {
+    expect(res.getStatus()).to.equal(503);
+  });
+}

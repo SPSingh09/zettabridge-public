@@ -1,0 +1,40 @@
+meta {
+  name: Webhook - 400 neither destination
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/v1/webhooks
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "symbol": "SBIN",
+    "required_comment": "sec"
+  }
+}
+
+docs {
+  Omitting both `broker_cred_id` and `paper_account_id` is rejected — a
+  webhook must route to exactly one execution destination.
+}
+
+tests {
+  test("Status 400", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+  test("Error explains a destination is required", function() {
+    expect(res.getBody().error).to.include("broker_cred_id or paper_account_id is required");
+  });
+}

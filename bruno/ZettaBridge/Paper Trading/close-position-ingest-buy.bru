@@ -1,0 +1,49 @@
+meta {
+  name: POST Ingest Signal (INFY BUY, for Close Position API test)
+  type: http
+  seq: 14
+}
+
+post {
+  url: {{baseUrl}}/v1/webhook/{{paperWebhookToken}}
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+script:pre-request {
+  // Same free-plan (orders_per_sec: 1) guard as ingest-sell-partial.bru —
+  // avoid landing in the same wall-clock second as snapshots.bru right before it.
+  const start = Date.now();
+  while (Date.now() - start < 1100) { /* spin */ }
+}
+
+body:json {
+  {
+    "comment": "paper-secret-1",
+    "type": "ORDER_SIGNAL",
+    "symbol": "INFY",
+    "action": "BUY",
+    "quantity": 5,
+    "order_type": "LIMIT",
+    "price": 1500
+  }
+}
+
+tests {
+  test("Status 202 queued", function() {
+    expect(res.getStatus()).to.equal(202);
+    expect(res.getBody().queued).to.equal(true);
+  });
+}
+
+docs {
+  Opens a dedicated INFY position (distinct from the TCS position used by the
+  main ingest-buy/sell-partial/close flow above) so close-position-api.bru can
+  close it via the new POST .../positions/close endpoint without disturbing
+  that flow. INFY is in the webhook's allowed_symbols (update-webhook-guards.bru)
+  and the indian_equity instrument master (migration 039).
+}

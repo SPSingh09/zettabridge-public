@@ -1,0 +1,56 @@
+meta {
+  name: POST Ingest Signal (Paper CLOSE, full exit)
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/v1/webhook/{{paperWebhookToken}}
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "comment": "paper-secret-1",
+    "type": "ORDER_SIGNAL",
+    "symbol": "SBIN",
+    "action": "CLOSE"
+  }
+}
+
+script:pre-request {
+  // Same free-plan (orders_per_sec: 1) guard as ingest-sell-partial.bru —
+  // this request otherwise lands in the same wall-clock second as the
+  // synchronous ingest-price-update request right before it.
+  const start = Date.now();
+  while (Date.now() - start < 1100) { /* spin */ }
+}
+
+tests {
+  test("Status 202 queued", function() {
+    expect(res.getStatus()).to.equal(202);
+    expect(res.getBody().queued).to.equal(true);
+  });
+}
+
+docs {
+  Run after **ingest-sell-partial** (position is now long 6 @ avg 821.5).
+  CLOSE exits the *entire* remaining quantity for the given `symbol` in one
+  shot — no `quantity` is needed, the engine computes the exact size to
+  flatten the position (`resolveCloseSide` in internal/paperengine/fill.go)
+  and infers the side (SELL to close a long, BUY to close a short) from the
+  position's sign. `price` is still required (paper has no market data feed
+  in v1).
+  
+  Realized P&L on this close: (840 - 821.5) * 6 = 111. Check Paper Trading →
+  positions (quantity should now be 0) and → pnl (realized_pnl should be
+  54 + 111 = 165) after this settles.
+  
+  If there is no open position for `symbol`, this is rejected with
+  "No open position to close" — visible via GET .../orders.
+}

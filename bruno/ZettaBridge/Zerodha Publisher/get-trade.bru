@@ -1,0 +1,48 @@
+meta {
+  name: GET Trade by ID
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/v1/trades/{{tradeId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+tests {
+  test("Returns 200 with trade", function() {
+    expect(res.getStatus()).to.equal(200);
+    const data = res.getBody().data;
+    expect(data.id).to.equal(bru.getVar("tradeId"));
+    expect(data.status).to.be.a("string");
+    expect(data.webhook_id).to.be.a("string");
+  });
+
+  test("Publisher trade has broker_order set to publisherOrderId", function() {
+    const data = res.getBody().data;
+    if (data.status === "pending_confirmation" || data.status === "submitted") {
+      expect(data.broker_order).to.be.a("string");
+    }
+  });
+}
+
+docs {
+  Returns a single trade by ID. Ownership is enforced — the JWT user must own the webhook
+  the trade belongs to (same access check as GET /v1/webhooks/:id/trades).
+
+  **For publisher trades** (`status: "pending_confirmation"`):
+  - `broker_order` contains the publisher order UUID (use as `publisherOrderId`).
+  - Dashboard renders "Confirm on Kite" button that fetches GET Publisher Order Status and
+    POSTs the handoff form to kite.zerodha.com/connect/basket.
+  - `?publisher=1` search param added when Kite callback redirects here — dashboard shows
+    a result banner (confirmed / cancelled / still pending).
+
+  **To get `tradeId`:** copy `id` from Webhooks → GET List Trades after firing a signal.
+
+  Returns 404 if the trade doesn't exist or belongs to a different user.
+}

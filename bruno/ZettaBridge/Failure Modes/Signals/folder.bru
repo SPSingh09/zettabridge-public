@@ -1,0 +1,11 @@
+meta {
+  name: Signals
+  seq: 6
+}
+
+docs {
+  Failure modes for POST /v1/webhook/:token signal ingestion.
+  Covers: unknown/rotated token, paused webhook, suspended account/org,
+  dedup replay within window, bracket order on CNC product,
+  invalid symbol (forex symbol on Indian equity credential), rate limiting.
+}

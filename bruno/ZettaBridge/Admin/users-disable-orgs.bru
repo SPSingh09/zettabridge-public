@@ -1,0 +1,46 @@
+meta {
+  name: PATCH Disable Org Creation
+  type: http
+  seq: 12
+}
+
+patch {
+  url: {{baseUrl}}/v1/admin/users/{{targetUserId}}
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "orgs_enabled": false
+  }
+}
+
+script:pre-request {
+  const id = bru.getVar("targetUserId");
+  if (!id || id.includes("{{")) {
+    throw new Error("targetUserId is not set. Run Admin > GET List Users first.");
+  }
+}
+
+docs {
+  Disables POST /v1/orgs for that user (admin-enabled org creation gate).
+  Does not remove existing org membership or delete orgs.
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("orgs_enabled is false", function() {
+    expect(res.getBody().data.orgs_enabled).to.equal(false);
+  });
+}

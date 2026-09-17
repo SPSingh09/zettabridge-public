@@ -1,0 +1,25 @@
+meta {
+  name: GET Verify Email
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/v1/auth/verify-email?token={{verifyToken}}
+  body: none
+  auth: none
+}
+
+docs {
+  Public endpoint. Token comes from verification email link or server log when EMAIL_PROVIDER=log.
+  After success, POST Login works when EMAIL_VERIFICATION_REQUIRED=true.
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("Verified true", function() {
+    expect(res.getBody().data.verified).to.equal(true);
+  });
+}

@@ -1,0 +1,34 @@
+meta {
+  name: Billing - 400 webhook bad signature
+  type: http
+  seq: 51
+}
+
+post {
+  url: {{baseUrl}}/v1/webhooks/stripe
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Stripe-Signature: bad-signature
+}
+
+body:json {
+  {
+    "id": "evt_test_bad",
+    "object": "event",
+    "type": "ping"
+  }
+}
+
+docs {
+  Requires BILLING_ENABLED=true on server (docker-compose.billing.yml).
+  Default local docker returns 503 instead.
+}
+
+tests {
+  test("Status 400 or 503", function() {
+    expect([400, 503]).to.include(res.getStatus());
+  });
+}

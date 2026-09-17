@@ -1,0 +1,502 @@
+# Extracted from preliminary decks
+
+
+## Preparation
+
+### Slide 1
+
+- ZB
+- Closed beta demo
+- ZettaBridge
+- Zerodha Demo Preparation Deck
+- A focused walkthrough to show product maturity, Publisher-first integration, risk controls, and the exact support needed from Zerodha.
+- Signal intake
+- Validation & dedup
+- Kite Publisher handoff
+- User confirmation
+- Audit trail
+- ZettaBridge · Zerodha Demo Preparation
+
+### Slide 2
+
+- 1. What we need to achieve in the Zerodha call
+- Anchor the meeting around a narrow, reviewable objective
+- Show responsible integration
+- We are adapting to Zerodha’s Publisher guidance rather than pushing direct write API access.
+- Demonstrate product readiness
+- Closed beta workflows, dashboard, paper trading, broker connections, request handling and billing limits.
+- ?
+- Clarify review path
+- Ask what Zerodha needs to review after Publisher flow is integrated.
+- ZettaBridge · Zerodha Demo Preparation
+
+### Slide 3
+
+- 2. ZettaBridge in one slide
+- Clear product positioning for Zerodha reviewers
+- A secure webhook execution bridge that converts TradingView / bot / API signals into broker-ready orders with validation, deduplication and an audit trail.
+- Signal sources
+- TradingView
+- AI bot
+- Python script
+- ZettaBridge
+- Auth
+- Validation
+- Deduplication
+- Zerodha flow
+- Kite Publisher
+- User confirmation
+- Order page
+- Records
+- Status
+- Logs
+- Audit trail
+- Not an advisory platform
+- User-controlled execution
+- Closed beta only
+- ZettaBridge · Zerodha Demo Preparation
+
+### Slide 4
+
+- 3. Current product state
+- What is ready versus what remains controlled
+- Ready for demo
+- User dashboard and auth
+- Webhook creation with secrets
+- Paper trading accounts and requests
+- Broker connection screens
+- Billing limits shown for beta
+- Docs: Getting Started / Broker setup
+- Keep controlled / say carefully
+- Live Zerodha flow is being completed using Publisher guidance
+- Closed beta: manual billing and limited users
+- No public promise of full broker automation yet
+- Website should say “Closed beta / production launch soon”
+- ZettaBridge · Zerodha Demo Preparation
+
+### Slide 5
+
+- 4. Zerodha-first execution architecture
+- Publisher-first path minimizes execution-screen and approval concerns
+- Webhook / Alert
+- Validated payload
+- secret checked
+- Order draft
+- Symbol + side + qty
+- limits + dedup
+- Kite Publisher
+- Redirect / basket
+- Zerodha order page
+- User confirms
+- User logs in / verifies
+- places order
+- Audit result
+- Request log
+- status + trace
+- Key message: ZettaBridge prepares and validates the order intent; Zerodha’s approved Publisher/offsite order page remains the execution confirmation layer.
+- ZettaBridge · Zerodha Demo Preparation
+- Source for Publisher/offsite wording: Zerodha Kite Connect Publisher and Offsite Order Execution docs
+
+### Slide 6
+
+- 5. Recommended live demo flow
+- Keep the walkthrough tight and low-risk
+- 01
+- Login + overview
+- Show beta dashboard, plan limits and controlled access.
+- 02
+- Create webhook
+- Show symbol allow-list, quantity defaults, dedup window and secret.
+- 03
+- Send sample signal
+- Use paper or safe demo payload first; show validation result.
+- 04
+- Publisher handoff
+- Show generated Zerodha order basket / button flow.
+- 05
+- Audit trail
+- Show request status, logs, rejection reason / duplicate handling.
+- Demo guardrails
+- No real order unless approved
+- Use INFY or known NSE symbol
+- Show rejection path too
+- Do not mention unsupported
+- brokers as live
+- ZettaBridge · Zerodha Demo Preparation
+
+### Slide 7
+
+- 6. Security & compliance posture
+- What Zerodha should hear from you
+- Encryption
+- AES-256-GCM credential encryption at rest; TLS in transit.
+- No secret leakage
+- Webhook URL is public but protected by token + user secret; secrets never shown in logs.
+- Static infra
+- AWS ECS/Fargate, private networking, CloudWatch logs, static egress IP path where required.
+- Auditability
+- Every request has traceable status, payload validation result and dedup decision.
+- Say this: “We are happy to provide architecture notes, sample request logs, webhook validation details and a restricted demo account for review.”
+- ZettaBridge · Zerodha Demo Preparation
+
+### Slide 8
+
+- 7. Controls that reduce operational risk
+- Show these screens, not only happy path
+- Symbol allow-list
+- Rejects unexpected instruments
+- Default quantity rules
+- 0 means payload must include quantity
+- Allowed actions
+- BUY / SELL / CLOSE can be restricted
+- Dedup window
+- Suppresses repeated alerts
+- Paper-first test path
+- Live flow stays opt-in
+- Request status trail
+- Clear failure reasons
+- ZettaBridge · Zerodha Demo Preparation
+
+### Slide 9
+
+- 8. Talk track: what to say while demoing
+- Use exact language that does not overpromise
+- Say this
+- “We are in closed beta and have kept live broker access restricted.”
+- “For Zerodha, we are implementing Publisher/offsite execution as advised.”
+- “The user reviews and confirms the basket on Zerodha’s side.”
+- “Our focus is secure signal intake, validation, controls and auditability.”
+- Avoid this
+- “Fully live for all brokers today.”
+- “No approval needed for automated execution.”
+- “We provide trading advice / recommendations.”
+- “Zerodha write API is assumed.”
+- ZettaBridge · Zerodha Demo Preparation
+
+### Slide 10
+
+- 9. Questions to ask Zerodha
+- End with crisp asks that help them respond
+- ?
+- Review checklist
+- What exact items should we submit after Publisher flow integration — demo URL, test account, screenshots, architecture note, logs?
+- ?
+- Allowed user experience
+- Any restrictions on how we display signal details before redirecting users to Zerodha’s order page?
+- ?
+- Branding / wording
+- Any preferred wording to use publicly for Zerodha Publisher integration during closed beta?
+- ?
+- Next call
+- Can we schedule a review once the Publisher flow is integrated and available in staging?
+- ZettaBridge · Zerodha Demo Preparation
+
+### Slide 11
+
+- 10. Roadmap: careful and believable
+- Answer broker-expansion questions without distracting from Zerodha
+- Now
+- Zerodha Publisher flow + closed beta paper/live guardrails
+- Next
+- Stabilize request logs, docs, website wording and broker connection UX
+- Later
+- Evaluate Indian brokers, then forex/crypto only if compliance and provider terms allow
+- Best answer if asked: “Yes, we may support other brokers over time, but the immediate priority is to get the Zerodha Publisher flow correct and review-ready first.”
+- ZettaBridge · Zerodha Demo Preparation
+
+### Slide 12
+
+- ZB
+- Closing message
+- “We have adjusted ZettaBridge around Zerodha’s Publisher guidance. Our request is not broad write-access approval today; it is a review path for a user-confirmed, controlled, auditable Zerodha execution experience.”
+- Meeting outcome
+- Confirm Publisher approach
+- Get review checklist
+- Agree follow-up call
+- Avoid overclaiming
+- Prepared for: Surya Pratap Singh · Founder, ZettaBridge / ZettaFlux Labs
+- ZettaBridge · Zerodha Demo Preparation
+
+
+## Broker Demo
+
+### Slide 1
+
+- ZB
+- Closed beta demo
+- ZettaBridge
+- Zerodha Broker Demo
+- Secure webhook execution bridge for paper trading and Zerodha Kite Publisher based live confirmation.
+- TradingView / bot signals
+- Validation + deduplication
+- Kite Publisher handoff
+- User-confirmed Zerodha order
+- Audit trail and request logs
+- Prepared for Zerodha review
+
+### Slide 2
+
+- Demo objective for today
+- Keep the call anchored around a narrow, reviewable scope
+- 1
+- Show current product behaviour
+- Closed beta workflows: paper trading, webhook setup, dashboard logs, and Zerodha Publisher handoff.
+- 2
+- Confirm Zerodha-safe execution model
+- ZettaBridge prepares and validates order intent; the user completes order confirmation on Zerodha.
+- 3
+- Agree next review inputs
+- Identify exact artifacts Zerodha needs: demo URL, test account, architecture note, screenshots or sample logs.
+- Positioning: “We are here to demonstrate the Publisher-compatible path and take Zerodha’s review guidance before expanding access.”
+- ZettaBridge · Broker-facing demo · July 2026
+- Closed beta: paper trading + Zerodha Kite Publisher
+
+### Slide 3
+
+- What ZettaBridge does
+- One clear product statement for broker reviewers
+- ZettaBridge converts user-owned trading signals into controlled execution workflows with validation, risk guards, duplicate suppression and an auditable trail.
+- Signal source
+- TradingView
+- AI bot
+- Python script
+- ZettaBridge
+- Token auth
+- Payload checks
+- Dedup queue
+- Destination
+- Paper engine
+- Kite Publisher
+- Outcome
+- Pending / filled
+- Rejected
+- Audit log
+- Not investment advice
+- No custody of funds/securities
+- Closed beta only
+- Zerodha user confirms order
+- ZettaBridge · Broker-facing demo · July 2026
+- Closed beta: paper trading + Zerodha Kite Publisher
+
+### Slide 4
+
+- Current supported scope
+- Transparent status avoids overclaiming
+- Available in closed beta
+- Paper trading engine and accounts
+- Webhook creation with allowed symbols and secrets
+- Dashboard request logs and trade statuses
+- Zerodha Kite Publisher handoff workflow
+- Plan gates for Free / Paper / Pro / Pro Plus
+- Not positioned as live today
+- Direct Kite Connect automated order placement
+- Public Angel / Dhan / MT5 broker rollout
+- Investment advisory / discretionary trading
+- Mass public launch without broker review
+- Demo-safe message: “Zerodha is the first live broker workflow we are aligning carefully, using Publisher/offsite confirmation.”
+- ZettaBridge · Broker-facing demo · July 2026
+- Closed beta: paper trading + Zerodha Kite Publisher
+
+### Slide 5
+
+- End-user journey: signal to Zerodha confirmation
+- Diagram to show during the actual demo
+- 1
+- Create webhook
+- destination, symbols, secret, lot defaults
+- 2
+- Send signal
+- POST JSON from TradingView / bot
+- 3
+- Accept + queue
+- HTTP 202 with request_id
+- 4
+- Prepare handoff
+- status: pending_confirmation
+- 5
+- User confirms
+- opens Zerodha order page
+- 6
+- Audit outcome
+- submitted / filled / rejected
+- Important: Publisher does not execute directly from the webhook response. The user reviews and confirms on Zerodha after ZettaBridge shows pending_confirmation.
+- ZettaBridge · Broker-facing demo · July 2026
+- Closed beta: paper trading + Zerodha Kite Publisher
+
+### Slide 6
+
+- Kite Publisher confirmation flow
+- What happens after a valid live signal
+- Signal source
+- ZettaBridge
+- User / Zerodha
+- POST /v1/webhook/{token}
+- 202 Accepted + request_id
+- Validate · queue · prepare handoff
+- Dashboard shows pending_confirmation
+- User confirms on Zerodha
+- Record submitted / filled / rejected in audit log
+- Broker-facing message: “ZettaBridge does not store the Zerodha login password and the user completes confirmation on Zerodha.”
+- ZettaBridge · Broker-facing demo · July 2026
+- Closed beta: paper trading + Zerodha Kite Publisher
+
+### Slide 7
+
+- Request path and security layers
+- Simplified broker-facing architecture
+- Signal source
+- TradingView · bot · script
+- Cloudflare edge
+- TLS · DDoS · WAF
+- API gateway
+- token auth · rate limits
+- Queue & worker
+- dedup · async processing
+- Workflow
+- paper engine · Publisher
+- Audit store
+- PostgreSQL event logs
+- Internal processing is async after HTTP 202; final status is visible in dashboard logs.
+- Default dedup window: 2 seconds. Rate limit: 60/min per webhook.
+- Closed beta live access is plan-gated and manually controlled.
+- ZettaBridge · Broker-facing demo · July 2026
+- Closed beta: paper trading + Zerodha Kite Publisher
+
+### Slide 8
+
+- Webhook controls shown in the demo
+- Screens Zerodha should see because they reduce misuse
+- Destination binding
+- Each webhook links to one paper account or one Zerodha configuration.
+- Allowed symbols
+- Signals are accepted only for configured symbols.
+- Required comment / secret
+- Signals without matching comment are rejected.
+- Allowed actions
+- Publisher webhooks can be limited to BUY / SELL.
+- Quantity rule
+- Default lot can override payload, or payload must provide positive lot.
+- Dedup + limits
+- Duplicate signals and rate-limit breaches are suppressed / rejected.
+- ZettaBridge · Broker-facing demo · July 2026
+- Closed beta: paper trading + Zerodha Kite Publisher
+
+### Slide 9
+
+- Data boundary: what ZettaBridge stores
+- Important trust slide for broker review
+- We store
+- Webhook config and defaults
+- Hashed webhook tokens
+- Paper account records
+- Broker mapping labels
+- Order attempts and audit logs
+- Optional order tags e.g., Algo-ID
+- We do not store
+- Zerodha login password
+- Customer funds or securities
+- TradingView credentials
+- Bank or payment credentials
+- If Zerodha asks for security detail, offer an architecture note and a restricted reviewer account instead of broad public claims.
+- ZettaBridge · Broker-facing demo · July 2026
+- Closed beta: paper trading + Zerodha Kite Publisher
+
+### Slide 10
+
+- Audit trail and status lifecycle
+- How support and review can trace every signal
+- queued
+- HTTP 202 accepted
+- pending_confirmation
+- Publisher: user action needed
+- submitted
+- User confirmed on Zerodha
+- filled / rejected
+- Final outcome captured
+- 202 response
+- request_id returned to signal source
+- Ingest log
+- accepted / rejected / dedup
+- Trade record
+- status and error_code
+- Dashboard
+- Webhook and execution logs
+- ZettaBridge · Broker-facing demo · July 2026
+- Closed beta: paper trading + Zerodha Kite Publisher
+
+### Slide 11
+
+- Live walkthrough sequence
+- Use this as the demo agenda slide
+- 1
+- Dashboard login
+- Closed beta account and plan limits
+- 2
+- Create / inspect webhook
+- Destination, symbols, secret, quantity and dedup
+- 3
+- Send paper signal
+- Show 202 accepted + dashboard outcome
+- 4
+- Show duplicate / rejection
+- Prove guards and error reporting
+- 5
+- Zerodha Publisher handoff
+- Show pending_confirmation and order review path
+- 6
+- Audit logs
+- request_id, status, error_code and history
+- Guardrail: do not place a real live order unless the Zerodha reviewers explicitly ask and you are fully prepared to cancel/handle it.
+- ZettaBridge · Broker-facing demo · July 2026
+- Closed beta: paper trading + Zerodha Kite Publisher
+
+### Slide 12
+
+- Review questions for Zerodha
+- Make the next step easy for them
+- ?
+- Review inputs
+- Which artifacts should we submit after Publisher integration: test account, demo URL, architecture note, screenshots, sample logs?
+- ?
+- UX boundaries
+- Any restrictions on how we display signal details, broker name, or order handoff language before sending users to Zerodha?
+- ?
+- Public wording
+- Preferred wording for “Zerodha Kite Publisher” on website/docs during closed beta?
+- ?
+- Next meeting
+- Can we schedule a follow-up review once the Publisher flow is ready in staging?
+- ZettaBridge · Broker-facing demo · July 2026
+- Closed beta: paper trading + Zerodha Kite Publisher
+
+### Slide 13
+
+- Roadmap stance: Zerodha first, expansion later
+- Answer “other brokers?” without reducing trust
+- Now
+- Zerodha Publisher flow + paper trading
+- Closed beta; controlled live access only
+- Next
+- Hardening and review artifacts
+- Docs, security notes, audit logs, website wording
+- Later
+- Other broker categories
+- Only after legal/compliance review and provider approval
+- Recommended answer: “Yes, we have long-term interest in other Indian / forex / crypto integrations, but we will not launch any broker route without the required approvals and compliant operating model.”
+- ZettaBridge · Broker-facing demo · July 2026
+- Closed beta: paper trading + Zerodha Kite Publisher
+
+### Slide 14
+
+- ZB
+- Thank you
+- What we are asking from Zerodha
+- Review the Publisher-based closed-beta flow
+- Confirm required artifacts for technical / product review
+- Share any branding, UX or compliance wording requirements
+- Schedule a follow-up review call after staging handoff is ready
+- Demo artifacts ready
+- Staging app
+- Reviewer account
+- Architecture note
+- Sample request logs

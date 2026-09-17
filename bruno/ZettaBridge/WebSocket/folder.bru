@@ -1,0 +1,23 @@
+meta {
+  name: WebSocket
+  seq: 8
+}
+
+docs {
+  Live trade push (4A.2) — replaces polling for dashboard MVP.
+
+  **Connect:** `GET /v1/ws/trades`
+  - JWT: `Authorization: Bearer {{token}}` or query `?token={{token}}`
+  - Push: `{ "type": "trade", "trade": { ... } }` on each persisted trade row
+
+  **Bruno:** use **ws-trades** request (WebSocket tab). Set `wsUrl` in environment:
+  `ws://localhost:8080/v1/ws/trades?token=<JWT>` (or `wss://` behind TLS).
+
+  **Browser:**
+  ```javascript
+  const ws = new WebSocket(`ws://localhost:8080/v1/ws/trades?token=${token}`);
+  ws.onmessage = (e) => console.log(JSON.parse(e.data));
+  ```
+
+  Then POST a signal (Signals folder) and watch a `trade` event arrive.
+}

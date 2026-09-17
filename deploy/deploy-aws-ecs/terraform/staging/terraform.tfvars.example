@@ -1,0 +1,112 @@
+# Copy to terraform.tfvars and fill in your values before first apply:
+#
+#   cp terraform.tfvars.example terraform.tfvars
+#
+# DNS note: zettabridge.net uses Cloudflare Registrar — nameservers cannot be changed.
+# Do NOT set route53_zone_id. Manage DNS records manually in Cloudflare after apply.
+#
+# Phase A — first apply (HTTP, get ALB running):
+#   1. Set bootstrap_admin_email below
+#   2. terraform init && terraform plan && terraform apply
+#   3. Copy alb_dns_name from output
+#   4. In Cloudflare: add CNAME api.staging → <alb_dns_name> (DNS only, grey cloud)
+#                     add CNAME app.staging → <alb_dns_name> (DNS only, grey cloud)
+#   5. curl http://api.staging.zettabridge.net/healthz  →  {"status":"ok"}
+#   6. Record nat_public_ip from output — whitelist at Angel One and Dhan before live mode
+#
+# Phase B — enable HTTPS (after Cloudflare CNAMEs resolve):
+#   1. aws acm request-certificate --domain-name api.staging.zettabridge.net \
+#        --subject-alternative-names app.staging.zettabridge.net \
+#        --validation-method DNS --region ap-south-1
+#   2. Add the ACM validation CNAMEs in Cloudflare (DNS only)
+#   3. aws acm wait certificate-validated --certificate-arn <arn> --region ap-south-1
+#   4. Uncomment Phase B block below, set acm_certificate_arn, terraform apply again
+
+aws_region   = "ap-south-1"
+project_name = "zettabridge"
+environment  = "staging"
+
+# --- App images ---
+image_tag           = "staging"
+dashboard_image_tag = "staging"
+
+# --- Sizing (minimal for staging) ---
+ecs_desired_count       = 1
+dashboard_desired_count = 1
+ecs_cpu                 = 512
+ecs_memory              = 1024
+db_instance_class       = "db.t4g.micro"
+cache_node_type         = "cache.t4g.micro"
+
+# --- App behavior ---
+broker_mode                 = "mock"
+email_verification_required = false
+email_provider              = "log"   # change to "smtp" when SMTP creds are configured
+sebi_algo_id_required       = false
+cors_origins                = "*"
+
+# --- SMTP (Zoho example; also works with SendGrid, SES, etc.) ---
+# email_from = "ZettaBridge <noreply@yourdomain.in>"
+# smtp_host  = "smtp.zoho.in"          # or smtp.zoho.com (US data-center)
+# smtp_port  = 587                     # STARTTLS; do NOT use 465 (implicit SSL not supported)
+# smtp_user  = "noreply@yourdomain.in" # full mailbox address (not just alias)
+# smtp_pass  = "zoho-app-password"     # Zoho Account → Security → App Passwords
+
+# --- One-time admin bootstrap (remove this line after first successful deploy) ---
+bootstrap_admin_email = "you@example.com"
+
+# ── Phase A: HTTP only (first apply) ─────────────────────────────────────────
+enable_https    = false
+api_domain_name = ""
+app_domain_name = ""
+route53_zone_id = ""   # not used — DNS managed in Cloudflare
+
+# ── Phase B: HTTPS (uncomment after ACM cert is validated) ───────────────────
+# enable_https        = true
+# api_domain_name     = "api.staging.zettabridge.net"
+# app_domain_name     = "app.staging.zettabridge.net"
+# acm_certificate_arn = "arn:aws:acm:ap-south-1:XXXX:certificate/..."
+# cors_origins        = "https://app.staging.zettabridge.net"
+
+# ── Stripe billing (enable in Phase 3, after live broker is validated) ────────
+billing_enabled = false
+# stripe_secret_key               = "sk_test_..."
+# stripe_webhook_secret           = "whsec_..."
+# stripe_price_pro = "price_..."   # Pro plan $29/mo
+
+# ── FYERS market-data OAuth (Paper Trading mark-to-market, Phase 6) ───────────
+# Single platform-wide connection, admin-connected via the dashboard
+# (Admin → Platform Settings → Connect FYERS) — not used for order placement.
+# Before applying: register this exact redirect URI in your FYERS app
+# dashboard (myapi.fyers.in/dashboard) — it must match byte-for-byte.
+# fyers_app_id        = "..."
+# fyers_secret_id     = "..."
+# fyers_callback_url  = "https://api.staging.zettabridge.net/v1/admin/fyers/callback"
+
+# ── Cost saving: set to 0 to pause Fargate tasks (NAT/RDS/Redis/ALB still bill) ─
+# ecs_desired_count       = 0
+# dashboard_desired_count = 0
+# adapter_desired_count   = 0
+
+# ── Phase 4: execution adapter split (paper cohosted + zerodha sidecar) ────────
+# Day 0 — only paper + zerodha; Angel/Dhan/MT5 omitted until E2E ready:
+#
+# enabled_adapters       = ["paper", "zerodha"]
+# execution_adapter_mode = "http"
+# paper_adapter_cohosted = true          # paper stays in Core task (default)
+#
+# When Angel goes live, add to enabled_adapters and apply:
+# enabled_adapters = ["paper", "zerodha", "angel"]
+# (requires cmd/angel-adapter binary — not shipped yet)
+#
+# Zerodha Kite OAuth requires a public hostname on the ALB:
+#   1. Cloudflare CNAME exec-zerodha.staging → <alb_dns_name> (DNS only)
+#   2. Include exec-zerodha.staging as ACM SAN when requesting HTTPS cert
+#   3. Register Kite redirect URIs in developers.kite.trade (see ADAPTER_SPLIT.md)
+#
+# execution_adapter_mode = "http"
+# zerodha_adapter_domain_name = "exec-zerodha.staging.zettabridge.net"
+# zerodha_api_key    = "..."
+# zerodha_api_secret = "..."
+# zerodha_frontend_url = "https://app.staging.zettabridge.net"
+# zerodha_publisher_enabled = true

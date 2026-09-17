@@ -1,0 +1,62 @@
+meta {
+  name: POST Create Webhook (Indian equity, LIMIT)
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{baseUrl}}/v1/webhooks
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "label": "RELIANCE LIMIT",
+    "broker_cred_id": "{{credId}}",
+    "symbol": "RELIANCE",
+    "lot_size": 1,
+    "max_risk_pct": 0,
+    "sl_points": 10,
+    "tp_points": 15,
+    "default_order_type": "LIMIT"
+  }
+}
+
+docs {
+  Same credential as create-indian.bru (`{{credId}}`), but a separate webhook
+  configured `default_order_type: LIMIT` — since a webhook now enforces a
+  single order type (a signal's `order_type` must match or the whole request
+  is rejected, see guard.ValidateOrderType), `indianWebhookToken`
+  (MARKET-configured) can't also serve the LIMIT examples that rely on an
+  explicit `price` (ingest-indian-buy.bru, ingest-indian-cnc.bru) — this is
+  their webhook.
+
+  Use with the same Indian broker credential as create-indian.bru.
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    const data = res.getBody().data;
+    bru.setVar("indianLimitWebhookId", data.id);
+    bru.setVar("indianLimitWebhookToken", data.token);
+  }
+}
+
+tests {
+  test("Indian equity LIMIT webhook created", function() {
+    expect(res.getStatus()).to.equal(201);
+    const data = res.getBody().data;
+    expect(data.symbol).to.equal("RELIANCE");
+    expect(data.default_order_type).to.equal("LIMIT");
+    expect(data.token).to.be.a("string");
+  });
+}

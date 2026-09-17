@@ -1,0 +1,27 @@
+# Optional overlay for local live-broker testing.
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.live.yml up --build
+#
+# Prerequisites:
+#   - Real broker credentials via POST /v1/credentials (never put tokens in this file)
+#   - Static egress IP whitelisted at Dhan / Angel if testing those brokers
+#   - Pro+ user plan for account_mode: live credentials
+#
+# CI and functional tests should keep the default docker-compose.yml (BROKER_MODE=mock).
+#
+# Optional: make functional-test-live-routing — proves free-tier mock routing when live mode is on.
+
+services:
+  server:
+    environment:
+      BROKER_MODE: "live"
+      # Angel SmartAPI — replace with your machine's public IP or VPN egress
+      BROKER_ANGEL_CLIENT_LOCAL_IP: "127.0.0.1"
+      BROKER_ANGEL_CLIENT_PUBLIC_IP: "127.0.0.1"
+      BROKER_ANGEL_MAC_ADDRESS: "00:00:00:00:00:00"
+      # Override only if using non-default broker hosts:
+      # BROKER_MT5_BASE_URL: "https://mt-client-api-v1.london.agiliumtrade.ai"
+      # BROKER_ZERODHA_BASE_URL: "https://api.kite.trade"
+      # BROKER_ANGEL_BASE_URL: "https://apiconnect.angelone.in"
+      # BROKER_DHAN_BASE_URL: "https://api.dhan.co"

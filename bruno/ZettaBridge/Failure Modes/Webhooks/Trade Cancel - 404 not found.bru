@@ -1,0 +1,26 @@
+meta {
+  name: Trade Cancel — 404 not found
+  type: http
+  seq: 51
+}
+
+delete {
+  url: {{baseUrl}}/v1/webhooks/{{webhookId}}/trades/00000000-0000-0000-0000-000000000000
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Prerequisite: run Auth > Login first; `webhookId` must be a valid webhook you own.
+  Expected: 404 { "error": "trade not found" }
+}
+
+tests {
+  test("Unknown trade id returns 404", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+}

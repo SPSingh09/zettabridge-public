@@ -1,0 +1,40 @@
+meta {
+  name: POST Register
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/v1/auth/register
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "{{email}}",
+    "password": "{{password}}"
+  }
+}
+
+docs {
+  Creates a new user (plan defaults to `free`).
+  Password must be at least 8 characters.
+  When email verification is enabled, response includes `email_verification_required: true` and login is blocked until verified.
+  Next: Auth > GET Verify Email, or Auth > POST Login (if verification disabled).
+}
+
+tests {
+  test("Status 201", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+  test("Returns user id and email", function() {
+    const data = res.getBody().data;
+    expect(data.id).to.be.a("string");
+    expect(data.email).to.equal(bru.getVar("email"));
+  });
+}

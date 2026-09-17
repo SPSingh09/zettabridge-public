@@ -1,0 +1,15 @@
+meta {
+  name: PUT Resume Webhook
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{baseUrl}}/v1/webhooks/{{webhookId}}/resume
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}

@@ -1,0 +1,37 @@
+meta {
+  name: Billing - 403 org member checkout
+  type: http
+  seq: 52
+}
+
+post {
+  url: {{baseUrl}}/v1/billing/checkout
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{inviteeToken}}
+}
+
+body:json {
+  {
+    "plan": "pro"
+  }
+}
+
+docs {
+  Org invitees cannot manage billing — only the org owner can checkout.
+  Run Org invite flow first so inviteeToken is set.
+  Expect 403 when billing enabled; 503 when billing disabled.
+}
+
+tests {
+  test("Status 403 or 503", function() {
+    expect([403, 503]).to.include(res.getStatus());
+  });
+}

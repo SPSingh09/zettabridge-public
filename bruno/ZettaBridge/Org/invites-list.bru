@@ -1,0 +1,30 @@
+meta {
+  name: GET List Invites
+  type: http
+  seq: 12
+}
+
+get {
+  url: {{baseUrl}}/v1/orgs/{{orgId}}/invites
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    const items = res.getBody().data;
+    if (Array.isArray(items) && items.length > 0) {
+      bru.setVar("inviteId", items[0].id);
+    }
+  }
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+}

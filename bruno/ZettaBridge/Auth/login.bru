@@ -1,0 +1,50 @@
+meta {
+  name: POST Login
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/v1/auth/login
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "{{email}}",
+    "password": "{{password}}"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    const json = res.getBody();
+    bru.setVar("token", json.data.token);
+    if (json.data.org_id) {
+      bru.setVar("orgId", json.data.org_id);
+    }
+    console.log("token saved");
+  }
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("Returns access token", function() {
+    expect(res.getBody().data.token).to.be.a("string");
+  });
+  test("Returns expires_in", function() {
+    expect(res.getBody().data.expires_in).to.be.above(0);
+  });
+}
+
+docs {
+  Issues access JWT (24h). Saves {{token}} for protected requests.
+  If user has an active org membership, response includes org_id and org_role.
+}

@@ -1,0 +1,25 @@
+meta {
+  name: POST Leave Org
+  type: http
+  seq: 19
+}
+
+post {
+  url: {{baseUrl}}/v1/orgs/{{orgId}}/leave
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{inviteeToken}}
+}
+
+docs {
+  Non-owner members only. Owner must transfer ownership or delete org.
+}
+
+tests {
+  test("Status 204", function() {
+    expect(res.getStatus()).to.equal(204);
+  });
+}

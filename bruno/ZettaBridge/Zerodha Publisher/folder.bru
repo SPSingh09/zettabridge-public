@@ -1,0 +1,30 @@
+meta {
+  name: Zerodha Publisher
+  seq: 10
+}
+
+docs {
+  Zerodha Kite Publisher flow — lets users submit orders via Kite's hosted basket confirmation
+  page instead of direct API (no algo-trading risk framework needed for retail users).
+
+  **Prerequisite:** Zerodha live credential with `execution_mode: "publisher"` (single API key,
+  no access token needed). See Credentials → create-zerodha-publisher.
+
+  **Flow:**
+  1. POST signal to webhook → worker creates publisher_order (status=`created`)
+     → trade status set to `pending_confirmation`, `broker_order` = publisher order UUID.
+  2. GET /v1/publisher/orders/:id — fetch handoff form fields (api_key + basket data JSON).
+  3. Dashboard POSTs hidden form to https://kite.zerodha.com/connect/basket — user sees basket.
+  4. User confirms → Kite redirects to GET /v1/publisher/callback?status=success&state=<signed>
+     User cancels  → Kite redirects to GET /v1/publisher/callback?status=cancelled&state=<signed>
+  5. Backend validates HMAC state, updates publisher_order + trade, redirects to frontend.
+  6. GET /v1/trades/:id — check final trade status (submitted / pending_confirmation).
+
+  **Publisher order statuses:** created → awaiting_confirmation → user_returned | user_cancelled | expired
+  **Trade statuses:**          pending_confirmation → submitted (on user_returned + settlement)
+
+  **State token:** HMAC-SHA256 signed, 30-minute expiry, URL-safe base64.
+  Format: base64RawURL(publisherOrderID | expiresUnix | hmac)
+
+  See: docs/broker-guide.md → Kite Publisher section.
+}

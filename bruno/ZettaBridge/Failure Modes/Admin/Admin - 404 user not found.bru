@@ -1,0 +1,26 @@
+meta {
+  name: Admin — 404 user not found
+  type: http
+  seq: 22
+}
+
+get {
+  url: {{baseUrl}}/v1/admin/users/00000000-0000-0000-0000-000000000000
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+docs {
+  Prerequisite: Admin > POST Admin Login.
+  Expected: 404 { "error": "user not found" }
+}
+
+tests {
+  test("Unknown user returns 404", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+}

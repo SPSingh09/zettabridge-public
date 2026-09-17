@@ -1,0 +1,42 @@
+meta {
+  name: PATCH Rename Org
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{baseUrl}}/v1/orgs/{{orgId}}
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "name": "Acme Capital"
+  }
+}
+
+script:pre-request {
+  const id = bru.getVar("orgId");
+  if (!id || id.includes("{{")) {
+    throw new Error("orgId is not set.");
+  }
+}
+
+docs {
+  Requires org role owner or admin.
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+}

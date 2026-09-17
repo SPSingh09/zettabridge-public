@@ -1,0 +1,44 @@
+meta {
+  name: Signal — dedup replay
+  type: http
+  seq: 45
+}
+
+post {
+  url: {{baseUrl}}/v1/webhook/{{webhookToken}}
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "action": "BUY",
+    "symbol": "EURUSD",
+    "lot": 0.01,
+    "comment": "dedup-replay-test"
+  }
+}
+
+docs {
+  Prerequisite: enable dedup on webhook — PUT `dedup_window_sec: 60` (paper+ on live webhooks).
+  Run this request twice within the window.
+
+  First response (HTTP 202):  `{ "queued": true, "request_id": "..." }`
+  Replay response (HTTP 409):  `{ "queued": false, "deduplicated": true }`
+
+  Different `comment` or action → new trade. See `docs/broker-guide.md`.
+}
+
+tests {
+  test("First run queued (202) or replay deduplicated (409)", function() {
+    const status = res.getStatus();
+    // First run returns 202 queued; replay within window returns 409 deduplicated.
+    expect(status === 202 || status === 409).to.equal(true);
+    const body = res.getBody();
+    expect(body.queued === true || body.deduplicated === true).to.equal(true);
+  });
+}

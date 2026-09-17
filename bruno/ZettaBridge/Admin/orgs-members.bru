@@ -1,0 +1,21 @@
+meta {
+  name: GET Org Members
+  type: http
+  seq: 15
+}
+
+get {
+  url: {{baseUrl}}/v1/admin/orgs/{{orgId}}/members
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+}

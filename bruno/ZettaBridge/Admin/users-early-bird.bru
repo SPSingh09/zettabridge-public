@@ -1,0 +1,42 @@
+meta {
+  name: PATCH Grant Early Bird Live
+  type: http
+  seq: 12
+}
+
+patch {
+  url: {{baseUrl}}/v1/admin/users/{{targetUserId}}
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "early_bird_live": true
+  }
+}
+
+docs {
+  Grants early-bird live access for a **free** user when `EARLY_BIRD_LIVE_ENABLED=true`
+  and the offer window is active (`EARLY_BIRD_LIVE_STARTS_AT` / `EARLY_BIRD_LIVE_ENDS_AT`).
+  Revoke with **PATCH Revoke Early Bird Live** or `{ "early_bird_live": false }`.
+  After revoke or outside the window, orders route to mock/paper — see **Plans** folder.
+  Requires platform env: EARLY_BIRD_LIVE_ORDER_LIMIT (default 10).
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("Early bird granted", function() {
+    expect(res.getBody().data.early_bird_live).to.equal(true);
+  });
+}

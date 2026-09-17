@@ -1,0 +1,26 @@
+meta {
+  name: Publisher - 400 missing state
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/v1/publisher/callback?status=success&request_token=token123
+  body: none
+  auth: none
+}
+
+tests {
+  test("Missing state returns 400", function() {
+    expect(res.getStatus()).to.equal(400);
+    const body = res.getBody();
+    expect(body.error).to.include("state");
+  });
+}
+
+docs {
+  Callback with no `state` query param.
+
+  The server checks for `state` before anything else — returns 400 immediately without
+  touching the database. Safe to run against any environment.
+}

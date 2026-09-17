@@ -1,0 +1,14 @@
+meta {
+  name: Publisher
+  seq: 5
+}
+
+docs {
+  Failure modes for /v1/publisher/* endpoints.
+
+  Covers: missing state, invalid base64, HMAC mismatch, expired state, unknown publisher order,
+  publisher feature disabled (503), and invalid execution_mode on credential creation.
+
+  The callback gate tests (missing/invalid/expired state) are safe to run unauthenticated
+  — they all fail before touching the database.
+}

@@ -1,0 +1,40 @@
+meta {
+  name: GET Paper Account Snapshots
+  type: http
+  seq: 13
+}
+
+get {
+  url: {{baseUrl}}/v1/paper-accounts/{{paperAccountId}}/snapshots
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Equity/P&L history written by the Phase 6 background mark-to-market job
+  (`internal/marketdata.SnapshotJob`), newest first. Supports an optional
+  `?limit=` query param (default 100, max 500).
+
+  The job sweeps every paper account with at least one open (non-flat)
+  position on a fixed interval (`MARKET_DATA_SNAPSHOT_INTERVAL_SEC`, default
+  45s) — it refreshes last_price/unrealized_pnl from whatever
+  `MARKET_DATA_PROVIDER` is configured (default `signal`, a deliberate no-op:
+  paper positions only reprice from incoming ORDER_SIGNAL/PRICE_UPDATE
+  signals, same as Phase 5) and then writes one row here.
+
+  This request will return an empty list unless you have an open position
+  and wait at least one sweep interval — run ingest-buy, then wait ~45s
+  (or however MARKET_DATA_SNAPSHOT_INTERVAL_SEC is set) before calling this.
+  A flat account (no open positions) is skipped by the sweep entirely, so it
+  will never accumulate snapshots.
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+}

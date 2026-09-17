@@ -1,0 +1,50 @@
+meta {
+  name: GET Paper Orders (Trades)
+  type: http
+  seq: 11
+}
+
+get {
+  url: {{baseUrl}}/v1/paper-accounts/{{paperAccountId}}/orders
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  This is the dashboard's "Trades" table data source — sourced from paper_orders
+  LEFT JOIN paper_trades, so it shows both fills AND rejections (unlike
+  paper_trades alone, which is fills-only). Each row has `status`
+  (RECEIVED|VALIDATED|FILLED|REJECTED|CANCELLED) and, only for filled orders,
+  `realized_pnl`.
+
+  Response shape (added 2026-07-05, pagination): `{"orders": [...], "total": N}`,
+  not a bare array — `orders` is one page (default limit 50, `?limit`/`?offset`
+  query params, limit clamped 1-200), `total` is the account's full order count
+  regardless of page, used by the dashboard's "Load more" button.
+
+  Expect 3 rows after ingest-buy + ingest-sell-partial + ingest-close: BUY 10
+  FILLED (realized_pnl 0 — opening trades never realize P&L), SELL 4 FILLED
+  (realized_pnl 54), and CLOSE 6 FILLED (realized_pnl 111). ingest-price-update
+  never appears here — PRICE_UPDATE creates no paper_orders/paper_trades row.
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("total matches orders returned", function() {
+    const d = res.getBody().data;
+    expect(d.total).to.equal(d.orders.length);
+  });
+  test("Filled orders have a fill_price and status FILLED", function() {
+    const orders = res.getBody().data.orders;
+    const filled = orders.filter((o) => o.status === "FILLED");
+    filled.forEach((o) => {
+      expect(o.fill_price).to.be.a("number");
+    });
+  });
+}

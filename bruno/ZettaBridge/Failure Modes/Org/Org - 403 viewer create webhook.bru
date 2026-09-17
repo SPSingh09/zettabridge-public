@@ -1,0 +1,38 @@
+meta {
+  name: Org — 403 viewer create webhook
+  type: http
+  seq: 34
+}
+
+post {
+  url: {{baseUrl}}/v1/webhooks
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{inviteeToken}}
+}
+
+body:json {
+  {
+    "label": "Blocked",
+    "broker_cred_id": "{{credId}}",
+    "symbol": "EURUSD"
+  }
+}
+
+docs {
+  Prerequisite: invitee with viewer role (PATCH member role to viewer first).
+  Expected: 403 insufficient org permissions
+}
+
+tests {
+  test("Viewer blocked from create", function() {
+    expect(res.getStatus()).to.equal(403);
+  });
+}

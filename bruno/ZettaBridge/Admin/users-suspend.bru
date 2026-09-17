@@ -1,0 +1,46 @@
+meta {
+  name: PATCH Suspend User
+  type: http
+  seq: 8
+}
+
+patch {
+  url: {{baseUrl}}/v1/admin/users/{{targetUserId}}
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "status": "suspended"
+  }
+}
+
+script:pre-request {
+  const id = bru.getVar("targetUserId");
+  if (!id || id.includes("{{")) {
+    throw new Error("targetUserId is not set. Run Admin > GET List Users first.");
+  }
+}
+
+docs {
+  Cannot suspend platform admin accounts.
+  Suspended users cannot login.
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("User is suspended", function() {
+    expect(res.getBody().data.status).to.equal("suspended");
+  });
+}

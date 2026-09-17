@@ -1,0 +1,50 @@
+meta {
+  name: GET Me — Pro Plus plan limits
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/v1/me
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Verify Pro Plus plan limits on /v1/me.
+
+  Prerequisites:
+  1. Admin → PUT Set User Plan → `{ "plan": "pro_plus" }`
+  2. Auth → POST Login as that user
+
+  Expected:
+  - plan: "pro_plus"
+  - max_paper_accounts: 10
+  - max_paper_webhooks: 15
+  - max_live_webhooks: 5
+  - max_broker_creds: 3
+  - live_trading_allowed: true
+
+  Pro Plus unlocks multi-product credentials — Credentials/create-multi-product-pro-plus.
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("Plan is pro_plus", function() {
+    expect(res.getBody().data.plan).to.equal("pro_plus");
+  });
+  test("Pro Plus limits", function() {
+    const d = res.getBody().data;
+    expect(d.max_paper_accounts).to.equal(10);
+    expect(d.max_paper_webhooks).to.equal(15);
+    expect(d.max_live_webhooks).to.equal(5);
+    expect(d.max_broker_creds).to.equal(3);
+    expect(d.live_trading_allowed).to.equal(true);
+  });
+}

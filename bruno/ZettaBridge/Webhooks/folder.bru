@@ -1,0 +1,27 @@
+meta {
+  name: Webhooks
+  seq: 5
+}
+
+docs {
+  Protected webhook CRUD (org-aware when user has active org):
+  - GET    /v1/webhooks
+  - POST   /v1/webhooks
+  - PUT    /v1/webhooks/:id
+  - POST   /v1/webhooks/:id/rotate-token
+  - PUT    /v1/webhooks/:id/pause
+  - PUT    /v1/webhooks/:id/resume
+  - DELETE /v1/webhooks/:id
+  - GET    /v1/webhooks/:id/trades
+  - DELETE /v1/webhooks/:id/trades/:tradeId
+  - GET    /v1/webhooks/:id/pnl
+
+  **Templates:** create (MT5/forex), create-indian (NSE/BSE equity), update, rotate-token, pause, resume, trades, cancel-trade, pnl.
+
+  **Symbol conventions:**
+  - `mt5_cloud` credential → webhook symbol `EURUSD`, `GBPUSD`, … (lots e.g. 0.01)
+  - Indian credential → `RELIANCE`, `TCS`, … (integer share qty); credential `exchange` must match
+  - Forex symbol + Indian cred → trade `rejected` / `invalid_symbol` (see Failure Modes setup)
+
+  Full guide: repo `docs/broker-guide.md#symbol-conventions`
+}

@@ -1,0 +1,37 @@
+meta {
+  name: Webhook Delete — after signal (expect 204)
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{baseUrl}}/v1/webhooks/{{webhookId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Regression test for the former 500 FK bug.
+
+  Run in order:
+  1. Auth > Login
+  2. Credentials > Create (demo)
+  3. Webhooks > Create Webhook
+  4. Signals > Ingest BUY  (creates trades row)
+  5. This request
+
+  Before fix: 500 "delete failed" (trades FK blocked webhook delete).
+  After fix:  204 No Content (trades deleted, then webhook).
+
+  Rebuild server after pulling latest code: docker compose up --build -d
+}
+
+tests {
+  test("Delete after signal returns 204", function() {
+    expect(res.getStatus()).to.equal(204);
+  });
+}

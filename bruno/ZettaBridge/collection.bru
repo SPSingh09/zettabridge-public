@@ -1,0 +1,181 @@
+meta {
+  name: ZettaBridge API
+}
+
+vars:pre-request {
+  baseUrl: http://localhost:8080
+  wsUrl: ws://localhost:8080/v1/ws/trades
+  token:
+  credId:
+  webhookId:
+  webhookToken:
+  email: trader@example.com
+  password: secret123
+  adminEmail: admin@example.com
+  adminPassword: admin123
+  adminToken:
+  targetUserId:
+  filterPlan:
+  filterStatus:
+  filterEmail:
+  orgId:
+  orgOwnerEmail: owner@example.com
+  orgOwnerPassword: owner123
+  inviteeEmail: trader@example.com
+  inviteePassword: invitee123
+  inviteToken:
+  inviteId:
+  memberUserId:
+  inviteeToken:
+  indianWebhookId:
+  indianWebhookToken:
+  indianForexWebhookToken:
+  indianForexWebhookId:
+  mt5CredId:
+  webhookTokenPrev:
+  paperAccountId:
+  paperWebhookId:
+  paperWebhookToken:
+  multiProductCredId:
+  badCredId:
+  tradeId:
+  publisherOrderId:
+  publisherState:
+  publisherApiKey:
+}
+
+docs {
+  ZettaBridge API collection — every implemented endpoint has a request below.
+
+  **Setup:** Select environment **local** (top-right). Default `baseUrl` is `http://localhost:8080`.
+
+  ## API index (implemented routes)
+
+  ### Public
+  | Method | Path | Bruno folder |
+  | GET | /healthz | Health |
+  | POST | /v1/auth/register | Auth |
+  | POST | /v1/auth/login | Auth |
+  | POST | /v1/auth/logout | Auth / Admin |
+  | GET | /v1/invites/:token | Invites |
+  | POST | /v1/invites/accept | Invites |
+  | POST | /v1/webhook/:token | Signals |
+  | POST | /v1/webhooks/stripe | Billing (Stripe signature, public) |
+
+  ### Account (JWT)
+  | GET | /v1/me | Account |
+  | GET | /v1/billing/plans | Billing |
+  | POST | /v1/billing/checkout | Billing |
+  | POST | /v1/billing/portal | Billing |
+
+  ### Webhooks (JWT, org-aware)
+  | GET | /v1/webhooks | Webhooks |
+  | POST | /v1/webhooks | Webhooks |
+  | PUT | /v1/webhooks/:id | Webhooks |
+  | POST | /v1/webhooks/:id/rotate-token | Webhooks |
+  | PUT | /v1/webhooks/:id/pause | Webhooks |
+  | PUT | /v1/webhooks/:id/resume | Webhooks |
+  | DELETE | /v1/webhooks/:id | Webhooks |
+  | GET | /v1/webhooks/:id/trades | Webhooks |
+  | DELETE | /v1/webhooks/:id/trades/:tradeId | Webhooks |
+  | GET | /v1/webhooks/:id/pnl | Webhooks |
+  | GET | /v1/ws/trades | WebSocket |
+
+  A webhook routes to exactly one execution destination: `broker_cred_id` (live) or
+  `paper_account_id` (paper, broker-free) — see **Paper Trading** folder.
+
+  ### Credentials (JWT, org-aware)
+  | GET | /v1/credentials | Credentials |
+  | POST | /v1/credentials | Credentials |
+  | PUT | /v1/credentials/:id | Credentials |
+  | POST | /v1/credentials/:id/verify | Credentials |
+  | DELETE | /v1/credentials/:id | Credentials |
+
+  Credentials: send `raw_creds` on create/update only; server encrypts with AES-256-GCM (`AES_KEY`). Responses never return secrets.
+  Formats & token refresh: [docs/broker-guide.md](../docs/broker-guide.md)
+  Trades: mock mode records `submitted`; rejected trades include `error_code` (e.g. `invalid_symbol`).
+
+  ### Paper Trading (JWT)
+  | GET | /v1/market-profiles | Paper Trading |
+  | GET | /v1/paper-accounts | Paper Trading |
+  | POST | /v1/paper-accounts | Paper Trading |
+  | PATCH | /v1/paper-accounts/:id | Paper Trading |
+  | PUT | /v1/paper-accounts/:id/pause\|resume\|reset | Paper Trading |
+  | GET | /v1/paper-accounts/:id/positions | Paper Trading |
+  | POST | /v1/paper-accounts/:id/positions/close | Paper Trading |
+  | GET | /v1/paper-accounts/:id/orders | Paper Trading |
+  | GET | /v1/paper-accounts/:id/pnl | Paper Trading |
+  | GET | /v1/paper-accounts/:id/snapshots | Paper Trading |
+  | POST | /v1/symbol-requests | Symbol Requests |
+
+  Broker-free simulated trading. Caps scale by plan (free: 1 account, 1 paper webhook, 10 trades/mo).
+  Paper webhooks use typed ORDER_SIGNAL/PRICE_UPDATE payloads. MARKET fills can use FYERS live
+  quotes when configured (Admin → market data); otherwise include `price` in ORDER_SIGNAL.
+
+  ### Live brokers (`BROKER_MODE=live`, pro / pro_plus)
+  Requires live_trading_allowed on the user's plan. Free/paper cannot create live credentials.
+  Pro Plus: multi-product credentials (`products: ["MIS","CNC","NRML"]`) — signals need `"product"`.
+  Verify: Credentials → create → verify → Webhooks → Signals (include `price` and optional `product`).
+
+  ### Organizations (JWT)
+  | POST | /v1/orgs | Org |
+  | GET | /v1/orgs | Org |
+  | GET | /v1/orgs/:id | Org |
+  | PATCH | /v1/orgs/:id | Org |
+  | DELETE | /v1/orgs/:id | Org |
+  | GET | /v1/orgs/:id/members | Org |
+  | GET | /v1/orgs/:id/members/:userId | Org |
+  | PATCH | /v1/orgs/:id/members/:userId | Org |
+  | DELETE | /v1/orgs/:id/members/:userId | Org |
+  | POST | /v1/orgs/:id/invites | Org |
+  | GET | /v1/orgs/:id/invites | Org |
+  | DELETE | /v1/orgs/:id/invites/:inviteId | Org |
+  | GET | /v1/orgs/:id/webhooks | Org |
+  | GET | /v1/orgs/:id/trades | Org |
+  | GET | /v1/orgs/:id/pnl | Org |
+  | POST | /v1/orgs/:id/transfer-ownership | Org |
+  | POST | /v1/orgs/:id/leave | Org |
+  | GET | /v1/orgs/:id/usage | Org |
+  | GET | /v1/orgs/:id/activity | Org |
+
+  ### Trades (JWT)
+  | GET | /v1/trades/:id | Zerodha Publisher |
+
+  ### Zerodha Publisher (JWT)
+  | GET | /v1/publisher/orders/:id | Zerodha Publisher |
+  | GET | /v1/publisher/callback | Zerodha Publisher (public — Kite redirect) |
+
+  ### Platform admin (admin JWT)
+  | GET | /v1/admin/users | Admin |
+  | GET | /v1/admin/users/:id | Admin |
+  | PATCH | /v1/admin/users/:id | Admin |
+  | PUT | /v1/admin/users/:id/plan | Admin |
+  | GET | /v1/admin/orgs | Admin |
+  | GET | /v1/admin/orgs/:id | Admin |
+  | PATCH | /v1/admin/orgs/:id | Admin |
+  | GET | /v1/admin/orgs/:id/members | Admin |
+
+  ## Quick-start flows
+
+  **Indian equity (pro):** Admin set plan pro → Credentials (create-zerodha, live) → verify →
+  Webhooks (create-indian) → Signals (ingest-indian-buy with price)
+
+  **Pro Plus multi-product:** Admin set-user-plan-pro-plus → create-multi-product-pro-plus →
+  create-indian → ingest-indian-cnc (includes product field)
+
+  **Paper trading (no credential):** Auth → Paper Trading (market-profiles → create-account →
+  create-webhook → ingest-buy → positions → orders → pnl → snapshots → pause/resume/reset).
+  Plan limits: see **Plans** folder (free/paper/pro/pro_plus).
+
+  **Billing:** GET billing/plans (4 tiers) → checkout-paper | checkout-pro | checkout-pro-plus
+
+  **Platform admin:** Admin Login → List Users → Set User Plan → market data / instruments / symbol-requests
+
+  **Kite Publisher:** Credentials (create-zerodha-publisher, `execution_mode: "publisher"`) →
+  Webhooks (create-indian, attach publisher credential) →
+  Zerodha Publisher > POST Ingest Signal (Publisher Mode) →
+  Webhooks > GET List Trades (copy `broker_order` → `publisherOrderId`, `id` → `tradeId`) →
+  Zerodha Publisher > GET Publisher Order Status (get handoff form fields) →
+  [dashboard POSTs form to Kite, user confirms] →
+  Zerodha Publisher > GET Trade by ID (`status` should be `submitted`)
+}

@@ -1,0 +1,34 @@
+meta {
+  name: DELETE Revoke Platform Invite
+  type: http
+  seq: 32
+}
+
+delete {
+  url: {{baseUrl}}/v1/admin/invites/{{platformInviteId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+script:pre-request {
+  const id = bru.getVar("platformInviteId");
+  if (!id || id.includes("{{")) {
+    throw new Error("platformInviteId is not set. Run Admin > POST Create Platform Invite first.");
+  }
+}
+
+docs {
+  Admin-only. Revokes a platform invite so it can no longer be used at registration.
+  Already-used invites cannot be revoked (returns 404/409 depending on state).
+  Returns 204 No Content on success.
+}
+
+tests {
+  test("Status 204", function() {
+    expect(res.getStatus()).to.equal(204);
+  });
+}

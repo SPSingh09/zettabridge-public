@@ -1,0 +1,42 @@
+meta {
+  name: POST Ingest BUY (live smoke)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/v1/webhook/{{webhookToken}}
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "action": "BUY",
+    "symbol": "{{smokeSymbol}}",
+    "lot": {{smokeLot}},
+    "comment": "live_smoke"
+  }
+}
+
+vars:pre-request {
+  smokeSymbol: RELIANCE
+  smokeLot: 1
+}
+
+docs {
+  Prerequisite: verify passed; webhook bound to same credential.
+  Set `smokeSymbol` / `smokeLot` for your broker (RELIANCE for Indian, EURUSD + 0.01 for MT5).
+  Check trades endpoint next — do not expect fill confirmation in v1.
+}
+
+tests {
+  test("Signal queued", function() {
+    expect(res.getStatus()).to.equal(202);
+    expect(res.getBody().queued).to.equal(true);
+  });
+}

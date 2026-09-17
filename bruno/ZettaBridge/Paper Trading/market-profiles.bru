@@ -1,0 +1,31 @@
+meta {
+  name: GET Market Profiles (active)
+  type: http
+  seq: 0
+}
+
+get {
+  url: {{baseUrl}}/v1/market-profiles
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Lists active market profiles for paper account creation (e.g. indian_equity).
+  Admin CRUD is under Admin → market-profiles-*.
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("Includes indian_equity", function() {
+    const profiles = res.getBody().data;
+    const codes = profiles.map(p => p.code);
+    expect(codes).to.include("indian_equity");
+  });
+}

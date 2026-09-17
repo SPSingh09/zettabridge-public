@@ -1,0 +1,47 @@
+meta {
+  name: Signal — bracket_not_supported (CNC product)
+  type: http
+  seq: 45
+}
+
+post {
+  url: {{baseUrl}}/v1/webhook/{{indianCNCWebhookToken}}
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "action": "BUY",
+    "symbol": "RELIANCE",
+    "lot": 1,
+    "sl_pts": 20,
+    "tp_pts": 30,
+    "comment": "cnc_bracket_test"
+  }
+}
+
+docs {
+  Prerequisites:
+  1. Credentials → create a Zerodha/Angel/Dhan cred with product=CNC (delivery).
+  2. POST /v1/webhooks with that cred → save token as `indianCNCWebhookToken`.
+
+  Bracket/cover orders are only valid for intraday (MIS/NRML) products.
+  CNC (delivery) does not support SL/TP bracket orders.
+  Ingest returns 202; worker rejects with:
+    - status=rejected
+    - error_code=bracket_not_supported
+
+  Check GET /v1/webhooks/:id/trades for the rejected trade.
+}
+
+tests {
+  test("Ingest accepted (async reject)", function() {
+    expect(res.getStatus()).to.equal(202);
+    expect(res.getBody().queued).to.equal(true);
+  });
+}

@@ -1,0 +1,26 @@
+meta {
+  name: Webhook Delete — 401 no JWT
+  type: http
+  seq: 3
+}
+
+delete {
+  url: {{baseUrl}}/v1/webhooks/{{webhookId}}
+  body: none
+  auth: none
+}
+
+docs {
+  Prerequisite: set {{webhookId}} via Webhooks > Create Webhook.
+  No Authorization header sent on purpose.
+  Expected: 401 { "error": "invalid or missing token" }
+}
+
+tests {
+  test("Missing JWT returns 401", function() {
+    expect(res.getStatus()).to.equal(401);
+  });
+  test("Error message present", function() {
+    expect(res.getBody().error).to.equal("invalid or missing token");
+  });
+}

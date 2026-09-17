@@ -1,0 +1,145 @@
+services:
+  postgres:
+    image: postgres:16-bookworm
+    environment:
+      POSTGRES_DB: zettabridge
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d zettabridge"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - zb-net
+
+  redis:
+    image: redis:7-bookworm
+    ports:
+      - "6379:6379"
+    command: redis-server --save "" --appendonly no
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - zb-net
+
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: "8080"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/zettabridge?sslmode=disable
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: dev-secret-change-in-production-min-32-chars
+      AES_KEY: "a1b2c3d4e5f60718293a4b5c6d7e8f90112233445566778899aabbccddeeff00"
+      WORKER_COUNT: "20"
+      QUEUE_BUFFER: "500"
+      CORS_ORIGINS: "http://localhost:3000"
+      BOOTSTRAP_ADMIN_EMAIL: "admin@zettabridge.net"
+      BOOTSTRAP_ADMIN_PASSWORD: "changeme_admin_pw"
+      BROKER_MODE: "mock"
+      ENABLED_ADAPTERS: "paper,zerodha"
+      EXECUTION_ADAPTER_MODE: "local"
+      ZB_SERVICE_TOKEN: "dev-service-token-change-me"
+      PAPER_ADAPTER_URL: "http://paper-adapter:8091"
+      ZERODHA_ADAPTER_URL: "http://zerodha-adapter:8092"
+      BROKER_HTTP_TIMEOUT_SEC: "8"
+      BROKER_HTTP_GET_RETRIES: "2"
+      EMAIL_VERIFICATION_REQUIRED: "false"
+      SEBI_ALGO_ID_REQUIRED: "false"
+      CLOSED_REGISTRATION: "false"
+      EMAIL_PROVIDER: "log"
+      APP_PUBLIC_URL: "http://localhost:3000"
+      TELEGRAM_BOT_TOKEN: "0000000000:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - zb-net
+
+  # Phase 3 HTTP sidecars — start with: docker compose --profile adapters up
+  paper-adapter:
+    profiles: ["adapters"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    entrypoint: ["/app/paper-adapter"]
+    ports:
+      - "8091:8091"
+    environment:
+      ADAPTER_PORT: "8091"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/zettabridge?sslmode=disable
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: dev-secret-change-in-production-min-32-chars
+      AES_KEY: "a1b2c3d4e5f60718293a4b5c6d7e8f90112233445566778899aabbccddeeff00"
+      BROKER_MODE: "mock"
+      ENABLED_ADAPTERS: "paper"
+      ZB_SERVICE_TOKEN: "dev-service-token-change-me"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - zb-net
+
+  zerodha-adapter:
+    profiles: ["adapters"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    entrypoint: ["/app/zerodha-adapter"]
+    ports:
+      - "8092:8092"
+    environment:
+      ADAPTER_PORT: "8092"
+      ADAPTER_PUBLIC_URL: "http://localhost:8092"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/zettabridge?sslmode=disable
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: dev-secret-change-in-production-min-32-chars
+      AES_KEY: "a1b2c3d4e5f60718293a4b5c6d7e8f90112233445566778899aabbccddeeff00"
+      BROKER_MODE: "mock"
+      ENABLED_ADAPTERS: "zerodha"
+      CORE_INTERNAL_URL: "http://server:8080"
+      ZB_SERVICE_TOKEN: "dev-service-token-change-me"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - zb-net
+
+  dashboard:
+    build:
+      context: ./dashboard
+      dockerfile: Dockerfile
+      args:
+        INTERNAL_API_URL: http://server:8080
+    environment:
+      INTERNAL_API_URL: http://server:8080
+    ports:
+      - "3000:3000"
+    depends_on:
+      - server
+    networks:
+      - zb-net
+
+volumes:
+  pgdata:
+
+networks:
+  zb-net:
+    driver: bridge

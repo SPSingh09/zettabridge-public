@@ -1,0 +1,48 @@
+meta {
+  name: GET Billing Plans
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/v1/billing/plans
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Returns all four tiers: free, paper, pro, pro_plus.
+
+  Check `multi_product_credentials: true` only on pro_plus.
+  Free tier includes `max_paper_trades_per_month: 10`; paid tiers omit it (unlimited).
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("Has four plan tiers", function() {
+    const plans = res.getBody().data.plans;
+    expect(plans.length).to.equal(4);
+    const ids = plans.map(p => p.plan);
+    expect(ids).to.include.members(["free", "paper", "pro", "pro_plus"]);
+  });
+  test("Pro Plus multi-product flag", function() {
+    const proPlus = res.getBody().data.plans.find(p => p.plan === "pro_plus");
+    expect(proPlus).to.exist;
+    expect(proPlus.multi_product_credentials).to.equal(true);
+    expect(proPlus.max_brokers).to.equal(3);
+  });
+  test("Free paper trade cap", function() {
+    const free = res.getBody().data.plans.find(p => p.plan === "free");
+    expect(free.max_paper_trades_per_month).to.equal(10);
+  });
+  test("Checkout URLs", function() {
+    const checkout = res.getBody().data.checkout;
+    expect(checkout.cancel_immediate).to.equal(true);
+    expect(checkout.success_url).to.include("session_id=");
+  });
+}

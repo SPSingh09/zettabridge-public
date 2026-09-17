@@ -1,0 +1,28 @@
+meta {
+  name: GET Org Detail
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/v1/orgs/{{orgId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+script:pre-request {
+  const id = bru.getVar("orgId");
+  if (!id || id.includes("{{")) {
+    throw new Error("orgId is not set. Run Org > POST Create Org or GET List Orgs first.");
+  }
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+}

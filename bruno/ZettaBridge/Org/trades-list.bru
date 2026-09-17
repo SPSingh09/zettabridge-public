@@ -1,0 +1,32 @@
+meta {
+  name: GET Org Trades
+  type: http
+  seq: 15
+}
+
+get {
+  url: {{baseUrl}}/v1/orgs/{{orgId}}/trades
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Cross-webhook trade feed for the org. Any active org member (including viewer).
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("Org trades allow submitted status", function() {
+    const trades = res.getBody().data;
+    if (Array.isArray(trades) && trades.length > 0) {
+      expect(["queued", "submitted", "filled", "rejected", "cancelled"]).to.include(trades[0].status);
+    }
+  });
+}

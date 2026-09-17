@@ -1,0 +1,52 @@
+meta {
+  name: GET Me — Paper plan limits
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/v1/me
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Verify Paper plan limits on /v1/me.
+
+  Prerequisites:
+  1. Admin → PUT Set User Plan → `{ "plan": "paper" }`
+  2. Auth → POST Login as that user
+
+  Expected:
+  - plan: "paper"
+  - max_paper_accounts: 3
+  - max_paper_webhooks: 5
+  - max_live_webhooks: 0
+  - max_broker_creds: 0
+  - live_trading_allowed: false
+  - max_paper_trades_per_month: null
+  - orders_per_sec_enforced: 5
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("Plan is paper", function() {
+    expect(res.getBody().data.plan).to.equal("paper");
+  });
+  test("Paper limits", function() {
+    const d = res.getBody().data;
+    expect(d.max_paper_accounts).to.equal(3);
+    expect(d.max_paper_webhooks).to.equal(5);
+    expect(d.max_live_webhooks).to.equal(0);
+    expect(d.max_broker_creds).to.equal(0);
+    expect(d.live_trading_allowed).to.equal(false);
+    expect(d.max_paper_trades_per_month).to.equal(null);
+    expect(d.orders_per_sec_enforced).to.equal(5);
+  });
+}

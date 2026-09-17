@@ -1,0 +1,26 @@
+# Render with deploy/scripts/monitoring-up.sh (envsubst).
+# Do not edit prometheus.rendered.yml by hand.
+
+global:
+  scrape_interval: 5s
+  evaluation_interval: 30s
+  external_labels:
+    environment: ${OBS_ENVIRONMENT}
+    cluster: ${OBS_CLUSTER}
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
+
+rule_files:
+  - /etc/prometheus/alerts/${OBS_ALERTS_FILE}
+
+scrape_configs:
+  - job_name: zettabridge
+    metrics_path: /metrics
+    scheme: http
+    static_configs:
+      - targets: ["${ZETTABRIDGE_SCRAPE_TARGET}"]
+        labels:
+          cluster: ${OBS_CLUSTER}

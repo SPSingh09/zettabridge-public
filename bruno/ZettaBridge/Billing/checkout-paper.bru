@@ -1,0 +1,40 @@
+meta {
+  name: POST Checkout — Paper
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/v1/billing/checkout
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "plan": "paper"
+  }
+}
+
+docs {
+  Starts Stripe Checkout for the Paper tier (more paper accounts/webhooks, no live brokers).
+  Requires BILLING_ENABLED=true and STRIPE_PRICE_PAPER configured.
+}
+
+tests {
+  test("Checkout URL or disabled", function() {
+    const status = res.getStatus();
+    expect([200, 503]).to.include(status);
+    if (status === 200) {
+      expect(res.getBody().data.url).to.be.a("string");
+    }
+  });
+}

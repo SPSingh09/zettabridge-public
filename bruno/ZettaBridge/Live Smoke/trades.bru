@@ -1,0 +1,40 @@
+meta {
+  name: GET Webhook Trades (live smoke)
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/v1/webhooks/{{webhookId}}/trades
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Run after ingest-buy. Expect latest trade `submitted` with a broker order id.
+  If `rejected`, inspect `error` / `error_code` in the trade row (not returned on ingest).
+}
+
+tests {
+  test("Trades listed", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().data).to.be.an("array");
+  });
+
+  test("Latest trade submitted or rejected with reason", function() {
+    const trades = res.getBody().data;
+    if (trades.length === 0) {
+      console.log("No trades yet — wait and retry");
+      return;
+    }
+    const latest = trades[0];
+    expect(latest.status).to.be.oneOf(["submitted", "filled", "rejected", "cancelled"]);
+    if (latest.status === "rejected") {
+      console.log("rejected trade:", JSON.stringify(latest));
+    }
+  });
+}

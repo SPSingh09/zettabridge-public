@@ -1,0 +1,73 @@
+# Production alert thresholds — tighter than staging.
+# Use OBS_ALERTS_FILE=zettabridge-production.yml when OBS_ENVIRONMENT=production.
+
+groups:
+  - name: zettabridge_production
+    interval: 30s
+    rules:
+      - alert: ZettaBridgeDown
+        expr: up{job="zettabridge"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: ZettaBridge metrics scrape is down
+          description: Prometheus cannot scrape {{ $labels.job }} ({{ $labels.instance }}).
+
+      - alert: IngestRejectSpike
+        expr: |
+          (
+            sum(rate(zettabridge_ingest_total{status="rejected"}[5m]))
+            /
+            clamp_min(sum(rate(zettabridge_ingest_total[5m])), 0.001)
+          ) > 0.2
+          and sum(rate(zettabridge_ingest_total[5m])) > 0.01
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: High ingest rejection rate
+          description: More than 20% of ingests rejected over 5m.
+
+      - alert: TradeAuthFailedSpike
+        expr: sum(rate(zettabridge_trades_total{status="rejected",error_code="auth_failed"}[5m])) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Broker auth failures elevated
+          description: auth_failed trades exceeding 0.1/s — refresh broker credentials.
+
+      - alert: TradeRateLimited
+        expr: sum(rate(zettabridge_trades_total{status="rejected",error_code="rate_limited"}[5m])) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Plan rate limits firing often
+          description: rate_limited trades > 0.5/s for 5m.
+
+      - alert: BrokerHTTPLatencyHigh
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (rate(zettabridge_broker_http_duration_seconds_bucket[5m]))
+          ) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Broker HTTP p95 latency high
+          description: Outbound broker p95 latency above 5s for 5m.
+
+      - alert: DedupStorm
+        expr: |
+          sum(rate(zettabridge_dedup_hits_total[5m]))
+          >
+          3 * clamp_min(sum(rate(zettabridge_ingest_total{status="queued"}[5m])), 0.001)
+        for: 10m
+        labels:
+          severity: info
+        annotations:
+          summary: Dedup suppressions elevated
+          description: Duplicate signal rate high — check TradingView alert config.

@@ -1,0 +1,37 @@
+meta {
+  name: GET Member Detail
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/v1/orgs/{{orgId}}/members/{{memberUserId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Prerequisite: set {{memberUserId}} via one of:
+  - Invites > POST Accept Invite (saves user_id)
+  - Org > GET List Members (auto-saves first invitee or first non-owner)
+
+  API responses when userId is missing/invalid:
+  - empty or non-UUID → 400 invalid user id
+  - valid UUID, not a member → 404 member not found
+}
+
+tests {
+  test("API returns a valid HTTP status", function() {
+    expect(res.getStatus()).to.be.oneOf([200, 400, 404]);
+  });
+  test("Member profile when memberUserId is set", function() {
+    const id = bru.getVar("memberUserId");
+    if (id && res.getStatus() === 200) {
+      expect(res.getBody().data.user_id).to.equal(id);
+    }
+  });
+}

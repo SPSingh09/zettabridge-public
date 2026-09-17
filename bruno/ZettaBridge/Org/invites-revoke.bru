@@ -1,0 +1,27 @@
+meta {
+  name: DELETE Revoke Invite
+  type: http
+  seq: 13
+}
+
+delete {
+  url: {{baseUrl}}/v1/orgs/{{orgId}}/invites/{{inviteId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+script:pre-request {
+  if (!bru.getVar("inviteId")) {
+    throw new Error("inviteId not set. Run POST Create Invite or GET List Invites.");
+  }
+}
+
+tests {
+  test("Status 204", function() {
+    expect(res.getStatus()).to.equal(204);
+  });
+}

@@ -1,0 +1,36 @@
+meta {
+  name: Org — 403 not household
+  type: http
+  seq: 31
+}
+
+post {
+  url: {{baseUrl}}/v1/orgs
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "name": "Should Fail"
+  }
+}
+
+docs {
+  Prerequisite: login as free/individual user (Auth > POST Login).
+  Expected: 403 the <plan> plan cannot create organizations; upgrade to household
+}
+
+tests {
+  test("Non-household blocked", function() {
+    expect(res.getStatus()).to.equal(403);
+  });
+}

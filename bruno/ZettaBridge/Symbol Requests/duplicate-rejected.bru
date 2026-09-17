@@ -1,0 +1,39 @@
+meta {
+  name: POST Duplicate Request Rejected
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/v1/symbol-requests
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "market_profile_code": "indian_equity",
+    "exchange": "NSE",
+    "symbol": "BRUNOSYM1",
+    "reason": "Trying to request the same symbol again."
+  }
+}
+
+docs {
+  Same user + same profile/symbol as create-request-1.bru, which is still
+  pending — proves the partial unique index blocks duplicate active requests.
+}
+
+tests {
+  test("Status 409", function() {
+    expect(res.getStatus()).to.equal(409);
+  });
+}

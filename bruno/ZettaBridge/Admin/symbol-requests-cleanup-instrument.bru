@@ -1,0 +1,35 @@
+meta {
+  name: DELETE Instrument (Symbol Request Cleanup)
+  type: http
+  seq: 51
+}
+
+delete {
+  url: {{baseUrl}}/v1/admin/instruments/{{symbolRequestInstrumentId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+script:pre-request {
+  const id = bru.getVar("symbolRequestInstrumentId");
+  if (!id || id.includes("{{")) {
+    throw new Error("symbolRequestInstrumentId is not set. Run POST Create Instrument (For Symbol Request) first.");
+  }
+}
+
+docs {
+  Cleans up the throwaway BRUNOSYM1 instrument. The symbol_requests rows
+  themselves (resolved/rejected) are left in place — there's no delete
+  endpoint for them, and harmless resolved/rejected test rows are the same
+  pattern this suite already accepts elsewhere.
+}
+
+tests {
+  test("Status 204", function() {
+    expect(res.getStatus()).to.equal(204);
+  });
+}

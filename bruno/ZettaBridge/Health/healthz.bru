@@ -1,0 +1,24 @@
+meta {
+  name: GET Healthz
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/healthz
+  body: none
+  auth: none
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("Returns ok status", function() {
+    expect(res.getBody().data.status).to.equal("ok");
+  });
+}
+
+docs {
+  Public health check. Requires {{baseUrl}} from collection or local environment.
+}

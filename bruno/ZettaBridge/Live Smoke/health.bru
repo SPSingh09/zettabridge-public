@@ -1,0 +1,22 @@
+meta {
+  name: GET Health (live smoke)
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/healthz
+  body: none
+  auth: none
+}
+
+tests {
+  test("Server healthy before live smoke", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().status).to.equal("ok");
+  });
+}
+
+docs {
+  First step in live smoke — confirms server is up before hitting broker APIs.
+}

@@ -1,0 +1,49 @@
+meta {
+  name: PATCH Update Instrument
+  type: http
+  seq: 44
+}
+
+patch {
+  url: {{baseUrl}}/v1/admin/instruments/{{instrumentId}}
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "tick_size": 0.1,
+    "lot_size": 5
+  }
+}
+
+script:pre-request {
+  const id = bru.getVar("instrumentId");
+  if (!id || id.includes("{{")) {
+    throw new Error("instrumentId is not set. Run Admin > POST Create Instrument first.");
+  }
+}
+
+docs {
+  Updates the throwaway BRUNOTEST symbol's tick/lot size — same pencil-edit
+  fields the admin/instruments dashboard page exposes.
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("tick_size/lot_size updated", function() {
+    const d = res.getBody().data;
+    expect(d.tick_size).to.equal(0.1);
+    expect(d.lot_size).to.equal(5);
+  });
+}

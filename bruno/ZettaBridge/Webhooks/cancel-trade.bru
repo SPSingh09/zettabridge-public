@@ -1,0 +1,48 @@
+meta {
+  name: DELETE Cancel Trade
+  type: http
+  seq: 8
+}
+
+delete {
+  url: {{baseUrl}}/v1/webhooks/{{webhookId}}/trades/{{tradeId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+vars:pre-request {
+  tradeId:
+}
+
+docs {
+  Cancels a pending (submitted) trade. Only `submitted` trades are cancellable.
+  Set `webhookId` and `tradeId` from GET List Trades (seq: 7).
+
+  **Happy path:** `status=cancelled`, `cancelled_at` is set.
+
+  **Error cases (422):**
+  - `filled` — order already filled, use CLOSE signal instead
+  - `rejected` — order was rejected, nothing to cancel
+  - `cancelled` — order already cancelled
+  - `queued` — order not yet submitted to broker
+
+  **Error cases (502):** broker refused the cancel (cancel_error stored on trade).
+}
+
+tests {
+  test("Cancel returns 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("Cancelled trade has correct fields", function() {
+    const body = res.getBody();
+    expect(body.status).to.equal("cancelled");
+    expect(body.id).to.be.a("string");
+    expect(body.webhook_id).to.be.a("string");
+    expect(body.broker_order).to.be.a("string");
+  });
+}

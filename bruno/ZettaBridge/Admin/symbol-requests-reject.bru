@@ -1,0 +1,43 @@
+meta {
+  name: POST Reject Symbol Request
+  type: http
+  seq: 48
+}
+
+post {
+  url: {{baseUrl}}/v1/admin/symbol-requests/{{symbolRequestId2}}/reject
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "admin_note": "This symbol isn't supported on this market profile."
+  }
+}
+
+script:pre-request {
+  const id = bru.getVar("symbolRequestId2");
+  if (!id || id.includes("{{")) {
+    throw new Error("symbolRequestId2 is not set. Run Symbol Requests > POST Create Symbol Request (2) first.");
+  }
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("Status is rejected with admin note", function() {
+    const d = res.getBody().data;
+    expect(d.status).to.equal("rejected");
+    expect(d.admin_note).to.equal("This symbol isn't supported on this market profile.");
+  });
+}

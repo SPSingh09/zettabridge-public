@@ -1,0 +1,12 @@
+meta {
+  name: Failure Modes
+  seq: 9
+}
+
+docs {
+  Negative-path tests for auth, admin, org, credentials, webhook, and signal endpoints.
+  Credential failures: empty raw_creds, invalid format, missing exchange (Indian), verify invalid format (hint).
+  Webhook failures: immutable field on PUT, paused webhook, suspended account/org, invalid_symbol (forex on Indian cred), signal dedup replay.
+  Run after the happy-path requests in each folder.
+  Ops runbook: docs/operations-security.md (rotate-token, suspend, dedup incidents).
+}

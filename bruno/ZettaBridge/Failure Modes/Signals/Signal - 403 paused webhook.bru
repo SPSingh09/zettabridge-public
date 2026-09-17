@@ -1,0 +1,33 @@
+meta {
+  name: Signal — 403 paused webhook
+  type: http
+  seq: 40
+}
+
+post {
+  url: {{baseUrl}}/v1/webhook/{{webhookToken}}
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "action": "BUY",
+    "symbol": "EURUSD"
+  }
+}
+
+docs {
+  Prerequisite: Webhooks > PUT Pause Webhook first.
+  Expected: 403 webhook is paused
+}
+
+tests {
+  test("Paused webhook rejected", function() {
+    expect(res.getStatus()).to.equal(403);
+  });
+}

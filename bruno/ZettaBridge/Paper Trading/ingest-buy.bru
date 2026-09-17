@@ -1,0 +1,53 @@
+meta {
+  name: POST Ingest Signal (Paper BUY)
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/v1/webhook/{{paperWebhookToken}}
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "comment": "paper-secret-1",
+    "type": "ORDER_SIGNAL",
+    "symbol": "SBIN",
+    "action": "BUY",
+    "quantity": 12,
+    "order_type": "LIMIT"
+  }
+}
+
+tests {
+  test("Status 202 queued (not filled yet)", function() {
+    expect(res.getStatus()).to.equal(202);
+    expect(res.getBody().queued).to.equal(true);
+  });
+}
+
+docs {
+  Paper-destination webhooks require this typed payload — `type: "ORDER_SIGNAL"`
+  places/closes an order, `type: "PRICE_UPDATE"` marks a price (see
+  ingest-price-update.bru). `comment` is checked against the webhook's
+  `required_comment` — same field name and mechanism as live trading. Field is
+  `quantity`, not `lot`.
+  
+  `order_type`, if present, must match the webhook's configured
+  `default_order_type` (unset here, so LIMIT — see Webhooks → create-webhook
+  Paper) or the request is rejected; the actual order type used for the fill
+  always comes from that webhook config, same as the legacy shape.
+  
+  `price` is required in v1 (no market data feed) — omitting it fills with a
+  REJECTED order, visible via GET .../orders (see Failure Modes → Paper Trading).
+  
+  Ingest always returns 202 immediately; the fill happens async in the queue
+  worker. Check Paper Trading → positions / orders / pnl after this to see the
+  outcome (give it ~1s).
+}

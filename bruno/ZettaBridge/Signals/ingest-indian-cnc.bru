@@ -1,0 +1,42 @@
+meta {
+  name: POST Ingest Signal (Indian BUY — CNC)
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/v1/webhook/{{indianLimitWebhookToken}}
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "action": "BUY",
+    "symbol": "RELIANCE",
+    "product": "CNC",
+    "lot": 1,
+    "price": 2500,
+    "order_type": "LIMIT",
+    "comment": "bruno_indian"
+  }
+}
+
+docs {
+  Prerequisite: Pro Plus user with multi-product credential + Webhooks → create-indian-limit.
+
+  `product` selects which enabled product type to use when the credential has multiple.
+  Required when credential enables more than one of MIS/CNC/NRML. `order_type`
+  must match the webhook's configured type (LIMIT here) or the request is rejected.
+}
+
+tests {
+  test("Status 202 queued", function() {
+    expect(res.getStatus()).to.equal(202);
+    expect(res.getBody().queued).to.equal(true);
+  });
+}

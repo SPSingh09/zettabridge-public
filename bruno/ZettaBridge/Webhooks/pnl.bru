@@ -1,0 +1,39 @@
+meta {
+  name: GET Webhook PnL
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{baseUrl}}/v1/webhooks/{{webhookId}}/pnl
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  P&L rollup for one webhook. Requires **paper** plan or higher (audit logs).
+
+  Fields: `trade_count`, `by_status`, `notional` (sum lot×fill_price where fill_price>0),
+  `priced_trades`, `fill_rate` (filled / (filled+rejected)), `win_rate` (FIFO closes when fills exist).
+
+  Mock/staging: expect counts and reject rates; `notional`/`win_rate` often zero until live fills.
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("PnL summary shape", function() {
+    const p = res.getBody().data;
+    expect(p).to.have.property("trade_count");
+    expect(p).to.have.property("by_status");
+    expect(p).to.have.property("notional");
+    expect(p).to.have.property("priced_trades");
+    expect(p.webhook_id).to.equal(bru.getVar("webhookId"));
+  });
+}

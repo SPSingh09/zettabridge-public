@@ -1,0 +1,39 @@
+meta {
+  name: POST Ingest Signal (BUY)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/v1/webhook/{{indianWebhookToken}}
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "action": "BUY",
+    "symbol": "SBIN",
+    "product": "MIS",
+    "lot": 2,
+    "order_type": "MARKET",
+    "comment": "my-secret-1"
+  }
+}
+
+tests {
+  test("Status 202 queued (not filled)", function() {
+    expect(res.getStatus()).to.equal(202);
+    const body = res.getBody();
+    expect(body.queued).to.equal(true);
+  });
+}
+
+docs {
+  Ingest returns 202 with `queued: true` — signal entered the worker queue.
+  Check GET /v1/webhooks/:id/trades for broker outcome (`submitted` under BROKER_MODE=mock).
+}

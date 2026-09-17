@@ -1,0 +1,51 @@
+meta {
+  name: GET Me — Pro plan limits
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/v1/me
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Verify Pro plan limits on /v1/me.
+
+  Prerequisites:
+  1. Admin → PUT Set User Plan → `{ "plan": "pro" }`
+  2. Auth → POST Login as that user
+
+  Expected:
+  - plan: "pro"
+  - max_paper_accounts: 5
+  - max_paper_webhooks: 8
+  - max_live_webhooks: 1
+  - max_broker_creds: 1
+  - live_trading_allowed: true
+  - max_paper_trades_per_month: null
+  - orders_per_sec_enforced: 10
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("Plan is pro", function() {
+    expect(res.getBody().data.plan).to.equal("pro");
+  });
+  test("Pro limits", function() {
+    const d = res.getBody().data;
+    expect(d.max_paper_accounts).to.equal(5);
+    expect(d.max_paper_webhooks).to.equal(8);
+    expect(d.max_live_webhooks).to.equal(1);
+    expect(d.max_broker_creds).to.equal(1);
+    expect(d.live_trading_allowed).to.equal(true);
+    expect(d.orders_per_sec_enforced).to.equal(10);
+  });
+}

@@ -1,0 +1,46 @@
+meta {
+  name: POST Create Webhook
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/v1/webhooks
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "label": "EURUSD Scalper",
+    "broker_cred_id": "{{credId}}",
+    "symbol": "EURUSD",
+    "lot_size": 0.01,
+    "max_risk_pct": 1.0,
+    "sl_points": 20,
+    "tp_points": 28
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    const data = res.getBody().data;
+    bru.setVar("webhookId", data.id);
+    bru.setVar("webhookToken", data.token);
+    console.log("webhookId and webhookToken saved");
+  }
+}
+
+docs {
+  **Forex / MT5 webhook** — use with `mt5_cloud` credential.
+  Symbol examples: EURUSD, GBPUSD. Lot size in standard lots (e.g. 0.01).
+  Do not use with Indian broker credentials (invalid_symbol at trade time).
+}

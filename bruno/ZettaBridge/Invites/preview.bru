@@ -1,0 +1,33 @@
+meta {
+  name: GET Preview Invite
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/v1/invites/{{inviteToken}}
+  body: none
+  auth: none
+}
+
+docs {
+  Public — no JWT. Returns org name, email, role, expires_at.
+
+  Set {{inviteToken}} via Org > POST Create Invite (one-time token in response).
+
+  API responses when token is missing/invalid:
+  - empty, malformed, expired, or revoked → 404 invite is invalid or expired
+}
+
+tests {
+  test("API returns a valid HTTP status", function() {
+    expect(res.getStatus()).to.be.oneOf([200, 404]);
+  });
+  test("Invite preview when inviteToken is set", function() {
+    const t = bru.getVar("inviteToken");
+    if (t && res.getStatus() === 200) {
+      expect(res.getBody().data.email).to.be.a("string");
+      expect(res.getBody().data.org_name).to.be.a("string");
+    }
+  });
+}

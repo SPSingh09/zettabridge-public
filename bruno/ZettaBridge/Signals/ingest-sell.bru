@@ -1,0 +1,34 @@
+meta {
+  name: POST Ingest Signal (SELL)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/v1/webhook/{{indianWebhookToken}}
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "action": "SELL",
+    "symbol": "SBIN",
+    "product": "MIS",
+    "lot": 2,
+    "order_type": "MARKET",
+    "comment": "my-secret-1"
+  }
+}
+
+tests {
+  test("Status 202 queued (not filled)", function() {
+    expect(res.getStatus()).to.equal(202);
+    const body = res.getBody();
+    expect(body.queued).to.equal(true);
+  });
+}

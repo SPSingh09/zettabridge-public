@@ -1,0 +1,55 @@
+meta {
+  name: POST Create Instrument
+  type: http
+  seq: 43
+}
+
+post {
+  url: {{baseUrl}}/v1/admin/instruments
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "market_profile_code": "indian_equity",
+    "exchange": "NSE",
+    "symbol": "BRUNOTEST",
+    "name": "Bruno Test Symbol",
+    "instrument_type": "EQUITY",
+    "tick_size": 0.05,
+    "lot_size": 1
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("instrumentId", res.getBody().data.id);
+    console.log("instrumentId saved: " + res.getBody().data.id);
+  }
+}
+
+docs {
+  Creates a throwaway test symbol under `indian_equity` — cleaned up by
+  DELETE Instrument at the end of this sequence. Run Admin > Login first so
+  {{adminToken}} is set.
+}
+
+tests {
+  test("Status 201", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+  test("Returns created instrument", function() {
+    const d = res.getBody().data;
+    expect(d.symbol).to.equal("BRUNOTEST");
+    expect(d.id).to.be.a("string");
+  });
+}

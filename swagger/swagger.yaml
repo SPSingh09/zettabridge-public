@@ -1,0 +1,3412 @@
+swagger: '2.0'
+info:
+  title: ZettaBridge API
+  description: REST and WebSocket API for ZettaBridge — TradingView webhook ingestion, paper and live broker execution, billing,
+    and platform admin.
+  version: '1.0'
+  contact:
+    name: ZettaBridge
+    url: https://zettabridge.net
+host: api.staging.zettabridge.net
+basePath: /
+schemes:
+- https
+- http
+securityDefinitions:
+  BearerAuth:
+    type: apiKey
+    name: Authorization
+    in: header
+    description: JWT access token from POST /v1/auth/login. Prefix with "Bearer ".
+  ServiceToken:
+    type: apiKey
+    name: Authorization
+    in: header
+    description: Adapter→Core service token (Bearer ZB_SERVICE_TOKEN).
+paths:
+  /healthz:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: OK
+          schema:
+            type: object
+            additionalProperties:
+              type: string
+      description: Returns server status and current UTC timestamp. Used by ECS target group health checks.
+      tags:
+      - monitoring
+      produces:
+      - application/json
+  /metrics:
+    get:
+      summary: Prometheus metrics
+      responses:
+        '200':
+          description: '{string} string "Prometheus text format"'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      description: Exposes Prometheus metrics in text format. Requires Bearer token if METRICS_TOKEN is set.
+      tags:
+      - monitoring
+      security:
+      - BearerAuth: []
+      produces:
+      - text/plain
+  /v1/auth/register:
+    post:
+      summary: Register a new user
+      responses:
+        '201':
+          description: ''
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.APIResponse'
+            - type: object
+              properties:
+                data:
+                  $ref: '#/definitions/handler.RegisterResponse'
+        '400':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '403':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '409':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      description: Creates an account with email and password. Closed registration requires a platform invite code.
+      tags:
+      - auth
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      parameters:
+      - name: body
+        in: body
+        description: Registration payload
+        required: true
+        schema:
+          $ref: '#/definitions/handler.RegisterRequest'
+  /v1/auth/login:
+    post:
+      summary: Login
+      responses:
+        '200':
+          description: ''
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.APIResponse'
+            - type: object
+              properties:
+                data:
+                  $ref: '#/definitions/handler.LoginResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '403':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      description: Returns a JWT access token (5 hour TTL). Email must be verified when EMAIL_VERIFICATION_REQUIRED is enabled.
+      tags:
+      - auth
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      parameters:
+      - name: body
+        in: body
+        description: Credentials
+        required: true
+        schema:
+          $ref: '#/definitions/handler.LoginRequest'
+  /v1/auth/logout:
+    post:
+      summary: Logout
+      responses:
+        '204':
+          description: No content
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      description: Revokes the current JWT access token.
+      tags:
+      - auth
+      security:
+      - BearerAuth: []
+  /v1/auth/verify-email:
+    get:
+      summary: Verify email address
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/handler.APIResponse'
+        '400':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      description: Confirms email ownership using the token from the verification email link.
+      tags:
+      - auth
+      produces:
+      - application/json
+      parameters:
+      - name: token
+        in: query
+        description: Verification token
+        required: true
+        type: string
+  /v1/auth/resend-verification:
+    post:
+      summary: Resend verification email
+      responses:
+        '204':
+          description: No content
+        '400':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '429':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - auth
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      parameters:
+      - name: body
+        in: body
+        description: Email address
+        required: true
+        schema:
+          $ref: '#/definitions/handler.VerifyEmailRequest'
+  /v1/me:
+    get:
+      summary: Current user profile
+      responses:
+        '200':
+          description: ''
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.APIResponse'
+            - type: object
+              properties:
+                data:
+                  $ref: '#/definitions/handler.MeResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '404':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      description: Returns profile, effective plan, and usage counters (webhooks, paper trades).
+      tags:
+      - account
+      security:
+      - BearerAuth: []
+      produces:
+      - application/json
+  /v1/invites/{token}:
+    get:
+      summary: Preview platform invite
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/handler.APIResponse'
+        '404':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - auth
+      produces:
+      - application/json
+      parameters:
+      - name: token
+        in: path
+        description: Invite token
+        required: true
+        type: string
+  /v1/invites/accept:
+    post:
+      summary: Accept platform invite
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/handler.APIResponse'
+        '400':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '403':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - auth
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      parameters:
+      - name: body
+        in: body
+        description: Invite acceptance
+        required: true
+        schema:
+          $ref: '#/definitions/handler.AcceptInviteRequest'
+  /v1/webhook/{token}:
+    post:
+      summary: Ingest trade signal
+      responses:
+        '202':
+          description: '{object} IngestAcceptedResponse'
+          schema:
+            $ref: '#/definitions/handler.IngestAcceptedResponse'
+        '409':
+          description: '{object} IngestDedupResponse "Duplicate within dedup window"'
+          schema:
+            $ref: '#/definitions/handler.IngestDedupResponse'
+        '400':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '403':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '429':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '503':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      description: Receives a TradingView webhook signal and enqueues it for execution. Returns 202 before broker is called.
+        Duplicate signals within dedup_window_sec return 409 with deduplicated=true.
+      tags:
+      - signals
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      parameters:
+      - name: token
+        in: path
+        description: Webhook ingest token (UUID v4)
+        required: true
+        type: string
+      - name: body
+        in: body
+        description: Trade signal payload
+        required: true
+        schema:
+          $ref: '#/definitions/handler.SignalRequest'
+  /v1/ws/trades:
+    get:
+      summary: Live trade WebSocket
+      responses:
+        '101':
+          description: Switching Protocols
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      description: Streams real-time trade updates. Pass JWT as query param ?token= because headers cannot be set during WebSocket
+        upgrade.
+      tags:
+      - streaming
+      parameters:
+      - name: token
+        in: query
+        description: JWT access token
+        required: true
+        type: string
+  /v1/webhooks:
+    get:
+      summary: List webhooks
+      responses:
+        '200':
+          description: ''
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.APIResponse'
+            - type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '#/definitions/handler.WebhookResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      description: Returns all webhooks owned by the authenticated user.
+      tags:
+      - webhooks
+      security:
+      - BearerAuth: []
+      produces:
+      - application/json
+    post:
+      summary: Create webhook
+      responses:
+        '201':
+          description: ''
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.APIResponse'
+            - type: object
+              properties:
+                data:
+                  $ref: '#/definitions/handler.WebhookResponse'
+        '400':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '403':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      description: Creates a webhook with a unique ingest token. Set either broker_cred_id (live) or paper_account_id (paper).
+        Plan limits apply per tier (free, paper, pro, pro_plus).
+      tags:
+      - webhooks
+      security:
+      - BearerAuth: []
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      parameters:
+      - name: body
+        in: body
+        description: Webhook configuration
+        required: true
+        schema:
+          $ref: '#/definitions/handler.CreateWebhookRequest'
+  /v1/webhooks/{id}:
+    get:
+      summary: Get webhook
+      responses:
+        '200':
+          description: ''
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.APIResponse'
+            - type: object
+              properties:
+                data:
+                  $ref: '#/definitions/handler.WebhookResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '404':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - webhooks
+      security:
+      - BearerAuth: []
+      produces:
+      - application/json
+      parameters:
+      - name: id
+        in: path
+        description: Webhook ID
+        required: true
+        type: string
+    put:
+      summary: Update webhook
+      responses:
+        '200':
+          description: ''
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.APIResponse'
+            - type: object
+              properties:
+                data:
+                  $ref: '#/definitions/handler.WebhookResponse'
+        '400':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '404':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - webhooks
+      security:
+      - BearerAuth: []
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      parameters:
+      - name: id
+        in: path
+        description: Webhook ID
+        required: true
+        type: string
+      - name: body
+        in: body
+        description: Fields to update
+        required: true
+        schema:
+          $ref: '#/definitions/handler.CreateWebhookRequest'
+    delete:
+      summary: Delete webhook
+      responses:
+        '204':
+          description: No content
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '404':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - webhooks
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        description: Webhook ID
+        required: true
+        type: string
+  /v1/webhooks/{id}/pause:
+    put:
+      summary: Pause webhook
+      responses:
+        '200':
+          description: ''
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.APIResponse'
+            - type: object
+              properties:
+                data:
+                  $ref: '#/definitions/handler.WebhookResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '404':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - webhooks
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        description: Webhook ID
+        required: true
+        type: string
+  /v1/webhooks/{id}/resume:
+    put:
+      summary: Resume webhook
+      responses:
+        '200':
+          description: ''
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.APIResponse'
+            - type: object
+              properties:
+                data:
+                  $ref: '#/definitions/handler.WebhookResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '404':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - webhooks
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        description: Webhook ID
+        required: true
+        type: string
+  /v1/webhooks/{id}/rotate-token:
+    post:
+      summary: Rotate webhook ingest token
+      responses:
+        '200':
+          description: ''
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.APIResponse'
+            - type: object
+              properties:
+                data:
+                  $ref: '#/definitions/handler.RotateTokenResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '404':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      description: Generates a new ingest URL token; the old token is rejected immediately.
+      tags:
+      - webhooks
+      security:
+      - BearerAuth: []
+      produces:
+      - application/json
+      parameters:
+      - name: id
+        in: path
+        description: Webhook ID
+        required: true
+        type: string
+  /v1/webhooks/{id}/trades:
+    get:
+      summary: List webhook trades
+      responses:
+        '200':
+          description: ''
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.APIResponse'
+            - type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '#/definitions/handler.TradeResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '403':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - trades
+      security:
+      - BearerAuth: []
+      produces:
+      - application/json
+      parameters:
+      - name: id
+        in: path
+        description: Webhook ID
+        required: true
+        type: string
+      - name: limit
+        in: query
+        description: Max rows (default 50)
+        required: false
+        type: int
+  /v1/webhooks/{id}/trades/export:
+    get:
+      summary: Export webhook trades CSV
+      responses:
+        '200':
+          description: CSV export
+          schema:
+            type: string
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '403':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - trades
+      security:
+      - BearerAuth: []
+      produces:
+      - text/csv
+      parameters:
+      - name: id
+        in: path
+        description: Webhook ID
+        required: true
+        type: string
+  /v1/webhooks/{id}/trades/{tradeId}:
+    delete:
+      summary: Cancel trade
+      responses:
+        '200':
+          description: ''
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.APIResponse'
+            - type: object
+              properties:
+                data:
+                  $ref: '#/definitions/handler.TradeResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '404':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      description: Attempts to cancel a broker-side order for the given trade.
+      tags:
+      - trades
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        description: Webhook ID
+        required: true
+        type: string
+      - name: tradeId
+        in: path
+        description: Trade ID
+        required: true
+        type: string
+  /v1/webhooks/{id}/pnl:
+    get:
+      summary: Webhook P&L summary
+      responses:
+        '200':
+          description: ''
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.APIResponse'
+            - type: object
+              properties:
+                data:
+                  $ref: '#/definitions/handler.PnLResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '403':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - trades
+      security:
+      - BearerAuth: []
+      produces:
+      - application/json
+      parameters:
+      - name: id
+        in: path
+        description: Webhook ID
+        required: true
+        type: string
+  /v1/trades/{id}:
+    get:
+      summary: Get trade detail
+      responses:
+        '200':
+          description: ''
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.APIResponse'
+            - type: object
+              properties:
+                data:
+                  $ref: '#/definitions/handler.TradeResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '404':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - trades
+      security:
+      - BearerAuth: []
+      produces:
+      - application/json
+      parameters:
+      - name: id
+        in: path
+        description: Trade ID
+        required: true
+        type: string
+  /v1/brokers/enabled:
+    get:
+      summary: List enabled brokers
+      responses:
+        '200':
+          description: ''
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.APIResponse'
+            - type: object
+              properties:
+                data:
+                  $ref: '#/definitions/handler.EnabledBrokersResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      description: Returns broker types enabled on this deployment (ENABLED_ADAPTERS).
+      tags:
+      - credentials
+      security:
+      - BearerAuth: []
+      produces:
+      - application/json
+  /v1/credentials:
+    get:
+      summary: List broker credentials
+      responses:
+        '200':
+          description: ''
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.APIResponse'
+            - type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '#/definitions/handler.CredentialResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      description: Never returns raw_creds or encrypted session material.
+      tags:
+      - credentials
+      security:
+      - BearerAuth: []
+      produces:
+      - application/json
+    post:
+      summary: Create broker credential
+      responses:
+        '201':
+          description: ''
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.APIResponse'
+            - type: object
+              properties:
+                data:
+                  $ref: '#/definitions/handler.CredentialResponse'
+        '400':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '403':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      description: Adds a live broker credential. account_mode must be live; requires a plan with live_trading_allowed.
+      tags:
+      - credentials
+      security:
+      - BearerAuth: []
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      parameters:
+      - name: body
+        in: body
+        description: Credential payload
+        required: true
+        schema:
+          $ref: '#/definitions/handler.CreateCredentialRequest'
+  /v1/credentials/{id}:
+    put:
+      summary: Update broker credential
+      responses:
+        '200':
+          description: ''
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.APIResponse'
+            - type: object
+              properties:
+                data:
+                  $ref: '#/definitions/handler.CredentialResponse'
+        '400':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '404':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - credentials
+      security:
+      - BearerAuth: []
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      parameters:
+      - name: id
+        in: path
+        description: Credential ID
+        required: true
+        type: string
+      - name: body
+        in: body
+        description: Fields to update
+        required: true
+        schema:
+          $ref: '#/definitions/handler.CreateCredentialRequest'
+    delete:
+      summary: Delete broker credential
+      responses:
+        '204':
+          description: No content
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '404':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - credentials
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        description: Credential ID
+        required: true
+        type: string
+  /v1/credentials/{id}/verify:
+    post:
+      summary: Verify broker credential
+      responses:
+        '200':
+          description: ''
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.APIResponse'
+            - type: object
+              properties:
+                data:
+                  $ref: '#/definitions/handler.VerifyCredentialResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '404':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      description: Probes the broker API to validate stored credentials.
+      tags:
+      - credentials
+      security:
+      - BearerAuth: []
+      produces:
+      - application/json
+      parameters:
+      - name: id
+        in: path
+        description: Credential ID
+        required: true
+        type: string
+  /v1/credentials/{id}/pause:
+    put:
+      summary: Pause broker credential
+      responses:
+        '200':
+          description: ''
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.APIResponse'
+            - type: object
+              properties:
+                data:
+                  $ref: '#/definitions/handler.CredentialResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '404':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - credentials
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        description: Credential ID
+        required: true
+        type: string
+  /v1/credentials/{id}/resume:
+    put:
+      summary: Resume broker credential
+      responses:
+        '200':
+          description: ''
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.APIResponse'
+            - type: object
+              properties:
+                data:
+                  $ref: '#/definitions/handler.CredentialResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '404':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - credentials
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        description: Credential ID
+        required: true
+        type: string
+  /v1/credentials/zerodha/connect:
+    get:
+      summary: Initiate Zerodha OAuth
+      responses:
+        '200':
+          description: Redirect
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - credentials
+      security:
+      - BearerAuth: []
+      produces:
+      - application/json
+  /v1/credentials/zerodha/connect-info:
+    get:
+      summary: Zerodha connect metadata
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/handler.APIResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - credentials
+      security:
+      - BearerAuth: []
+      produces:
+      - application/json
+  /v1/credentials/zerodha/status:
+    get:
+      summary: Zerodha OAuth session status
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/handler.APIResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - credentials
+      security:
+      - BearerAuth: []
+      produces:
+      - application/json
+  /v1/credentials/zerodha/callback:
+    get:
+      summary: Zerodha OAuth callback
+      responses:
+        '302':
+          description: Redirect
+      description: Browser redirect from Kite Connect; public endpoint.
+      tags:
+      - credentials
+      parameters:
+      - name: request_token
+        in: query
+        description: Kite request token
+        required: true
+        type: string
+      - name: state
+        in: query
+        description: OAuth state
+        required: true
+        type: string
+  /v1/market-profiles:
+    get:
+      summary: List active market profiles
+      responses:
+        '200':
+          description: ''
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.APIResponse'
+            - type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '#/definitions/handler.MarketProfileResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - paper
+      security:
+      - BearerAuth: []
+      produces:
+      - application/json
+  /v1/paper-accounts:
+    get:
+      summary: List paper accounts
+      responses:
+        '200':
+          description: ''
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.APIResponse'
+            - type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '#/definitions/handler.PaperAccountResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - paper
+      security:
+      - BearerAuth: []
+      produces:
+      - application/json
+    post:
+      summary: Create paper account
+      responses:
+        '201':
+          description: ''
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.APIResponse'
+            - type: object
+              properties:
+                data:
+                  $ref: '#/definitions/handler.PaperAccountResponse'
+        '400':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '403':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - paper
+      security:
+      - BearerAuth: []
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      parameters:
+      - name: body
+        in: body
+        description: Paper account
+        required: true
+        schema:
+          $ref: '#/definitions/handler.CreatePaperAccountRequest'
+  /v1/paper-accounts/{id}:
+    get:
+      summary: Get paper account
+      responses:
+        '200':
+          description: ''
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.APIResponse'
+            - type: object
+              properties:
+                data:
+                  $ref: '#/definitions/handler.PaperAccountResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '404':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - paper
+      security:
+      - BearerAuth: []
+      produces:
+      - application/json
+      parameters:
+      - name: id
+        in: path
+        description: Paper account ID
+        required: true
+        type: string
+    patch:
+      summary: Update paper account
+      responses:
+        '200':
+          description: ''
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.APIResponse'
+            - type: object
+              properties:
+                data:
+                  $ref: '#/definitions/handler.PaperAccountResponse'
+        '400':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '404':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - paper
+      security:
+      - BearerAuth: []
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      parameters:
+      - name: id
+        in: path
+        description: Paper account ID
+        required: true
+        type: string
+      - name: body
+        in: body
+        description: Fields to update
+        required: true
+        schema:
+          $ref: '#/definitions/handler.CreatePaperAccountRequest'
+    delete:
+      summary: Delete paper account
+      responses:
+        '204':
+          description: No content
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '404':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - paper
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        description: Paper account ID
+        required: true
+        type: string
+  /v1/paper-accounts/{id}/pause:
+    put:
+      summary: Pause paper account
+      responses:
+        '200':
+          description: ''
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.APIResponse'
+            - type: object
+              properties:
+                data:
+                  $ref: '#/definitions/handler.PaperAccountResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '404':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - paper
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        description: Paper account ID
+        required: true
+        type: string
+  /v1/paper-accounts/{id}/resume:
+    put:
+      summary: Resume paper account
+      responses:
+        '200':
+          description: ''
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.APIResponse'
+            - type: object
+              properties:
+                data:
+                  $ref: '#/definitions/handler.PaperAccountResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '404':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - paper
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        description: Paper account ID
+        required: true
+        type: string
+  /v1/paper-accounts/{id}/reset:
+    put:
+      summary: Reset paper account
+      responses:
+        '200':
+          description: ''
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.APIResponse'
+            - type: object
+              properties:
+                data:
+                  $ref: '#/definitions/handler.PaperAccountResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '404':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      description: Resets cash balance and clears open positions.
+      tags:
+      - paper
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        description: Paper account ID
+        required: true
+        type: string
+  /v1/paper-accounts/{id}/positions:
+    get:
+      summary: List paper positions
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/handler.APIResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '404':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - paper
+      security:
+      - BearerAuth: []
+      produces:
+      - application/json
+      parameters:
+      - name: id
+        in: path
+        description: Paper account ID
+        required: true
+        type: string
+  /v1/paper-accounts/{id}/positions/close:
+    post:
+      summary: Close paper position
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/handler.APIResponse'
+        '400':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '404':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - paper
+      security:
+      - BearerAuth: []
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      parameters:
+      - name: id
+        in: path
+        description: Paper account ID
+        required: true
+        type: string
+      - name: body
+        in: body
+        description: Position to close
+        required: true
+        schema:
+          $ref: '#/definitions/handler.ClosePaperPositionRequest'
+  /v1/paper-accounts/{id}/orders:
+    get:
+      summary: List paper orders
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/handler.APIResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '404':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - paper
+      security:
+      - BearerAuth: []
+      produces:
+      - application/json
+      parameters:
+      - name: id
+        in: path
+        description: Paper account ID
+        required: true
+        type: string
+  /v1/paper-accounts/{id}/orders/export:
+    get:
+      summary: Export paper orders CSV
+      responses:
+        '200':
+          description: CSV export
+          schema:
+            type: string
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - paper
+      security:
+      - BearerAuth: []
+      produces:
+      - text/csv
+      parameters:
+      - name: id
+        in: path
+        description: Paper account ID
+        required: true
+        type: string
+  /v1/paper-accounts/{id}/pnl:
+    get:
+      summary: Paper account P&L
+      responses:
+        '200':
+          description: ''
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.APIResponse'
+            - type: object
+              properties:
+                data:
+                  $ref: '#/definitions/handler.PnLResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '404':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - paper
+      security:
+      - BearerAuth: []
+      produces:
+      - application/json
+      parameters:
+      - name: id
+        in: path
+        description: Paper account ID
+        required: true
+        type: string
+  /v1/paper-accounts/{id}/snapshots:
+    get:
+      summary: List paper account snapshots
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/handler.APIResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - paper
+      security:
+      - BearerAuth: []
+      produces:
+      - application/json
+      parameters:
+      - name: id
+        in: path
+        description: Paper account ID
+        required: true
+        type: string
+  /v1/billing/plans:
+    get:
+      summary: List billing plans
+      responses:
+        '200':
+          description: ''
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.APIResponse'
+            - type: object
+              properties:
+                data:
+                  $ref: '#/definitions/handler.BillingCatalog'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      description: 'Returns plan matrix: free, paper, pro, pro_plus with limits.'
+      tags:
+      - billing
+      security:
+      - BearerAuth: []
+      produces:
+      - application/json
+  /v1/billing/checkout:
+    post:
+      summary: Create Stripe Checkout session
+      responses:
+        '200':
+          description: ''
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.APIResponse'
+            - type: object
+              properties:
+                data:
+                  $ref: '#/definitions/handler.CheckoutResponse'
+        '400':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '503':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - billing
+      security:
+      - BearerAuth: []
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      parameters:
+      - name: body
+        in: body
+        description: Target plan
+        required: true
+        schema:
+          $ref: '#/definitions/handler.CheckoutRequest'
+  /v1/billing/portal:
+    post:
+      summary: Create Stripe Customer Portal session
+      responses:
+        '200':
+          description: ''
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.APIResponse'
+            - type: object
+              properties:
+                data:
+                  $ref: '#/definitions/handler.PortalResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '503':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - billing
+      security:
+      - BearerAuth: []
+      produces:
+      - application/json
+  /v1/webhooks/stripe:
+    post:
+      summary: Stripe webhook handler
+      responses:
+        '200':
+          description: '"OK"'
+        '400':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      description: Receives Stripe billing events. Verified via Stripe-Signature header.
+      tags:
+      - billing
+      consumes:
+      - application/json
+  /v1/internal/execution-events:
+    post:
+      summary: Report execution event
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/handler.APIResponse'
+        '400':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '404':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      description: Adapter→Core callback when order status changes. Requires service token.
+      tags:
+      - internal
+      security:
+      - ServiceToken: []
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      parameters:
+      - name: body
+        in: body
+        description: Execution event
+        required: true
+        schema:
+          $ref: '#/definitions/handler.ExecutionEventRequest'
+  /v1/internal/credentials/{id}/session:
+    put:
+      summary: Update broker session
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/handler.APIResponse'
+        '400':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '404':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      description: Adapter→Core callback after OAuth token exchange. Requires service token.
+      tags:
+      - internal
+      security:
+      - ServiceToken: []
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      parameters:
+      - name: id
+        in: path
+        description: Credential ID
+        required: true
+        type: string
+      - name: body
+        in: body
+        description: Encrypted session
+        required: true
+        schema:
+          $ref: '#/definitions/handler.SessionUpdateRequest'
+  /v1/notifications:
+    get:
+      summary: List notifications
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/handler.APIResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - notifications
+      security:
+      - BearerAuth: []
+      produces:
+      - application/json
+  /v1/notifications/unread-count:
+    get:
+      summary: Unread notification count
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/handler.APIResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - notifications
+      security:
+      - BearerAuth: []
+      produces:
+      - application/json
+  /v1/notifications/{id}/read:
+    patch:
+      summary: Mark notification read
+      responses:
+        '204':
+          description: No content
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - notifications
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        description: Notification ID
+        required: true
+        type: string
+  /v1/notifications/read-all:
+    post:
+      summary: Mark all notifications read
+      responses:
+        '204':
+          description: No content
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - notifications
+      security:
+      - BearerAuth: []
+  /v1/settings/telegram:
+    get:
+      summary: Get Telegram alert settings
+      responses:
+        '200':
+          description: ''
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.APIResponse'
+            - type: object
+              properties:
+                data:
+                  $ref: '#/definitions/handler.TelegramSettingsResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - notifications
+      security:
+      - BearerAuth: []
+      produces:
+      - application/json
+    patch:
+      summary: Update Telegram alert settings
+      responses:
+        '200':
+          description: ''
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.APIResponse'
+            - type: object
+              properties:
+                data:
+                  $ref: '#/definitions/handler.TelegramSettingsResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - notifications
+      security:
+      - BearerAuth: []
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      parameters:
+      - name: body
+        in: body
+        description: Telegram settings
+        required: true
+        schema:
+          $ref: '#/definitions/handler.TelegramSettingsRequest'
+  /v1/symbol-requests:
+    post:
+      summary: Request a new tradable symbol
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/handler.APIResponse'
+        '400':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - symbols
+      security:
+      - BearerAuth: []
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      parameters:
+      - name: body
+        in: body
+        description: Symbol request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.CreateSymbolRequest'
+    get:
+      summary: List my symbol requests
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/handler.APIResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - symbols
+      security:
+      - BearerAuth: []
+      produces:
+      - application/json
+  /v1/publisher/orders/{id}:
+    get:
+      summary: Get Kite Publisher order status
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/handler.APIResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '404':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - trades
+      security:
+      - BearerAuth: []
+      produces:
+      - application/json
+      parameters:
+      - name: id
+        in: path
+        description: Publisher order ID
+        required: true
+        type: string
+  /v1/admin/users:
+    get:
+      summary: List all users
+      responses:
+        '200':
+          description: ''
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.APIResponse'
+            - type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '#/definitions/handler.AdminUserResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '403':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - admin
+      security:
+      - BearerAuth: []
+      produces:
+      - application/json
+  /v1/admin/users/{id}:
+    get:
+      summary: Get user detail
+      responses:
+        '200':
+          description: ''
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.APIResponse'
+            - type: object
+              properties:
+                data:
+                  $ref: '#/definitions/handler.AdminUserResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '403':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '404':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - admin
+      security:
+      - BearerAuth: []
+      produces:
+      - application/json
+      parameters:
+      - name: id
+        in: path
+        description: User ID
+        required: true
+        type: string
+    patch:
+      summary: Patch user
+      responses:
+        '200':
+          description: ''
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.APIResponse'
+            - type: object
+              properties:
+                data:
+                  $ref: '#/definitions/handler.AdminUserResponse'
+        '400':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '403':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - admin
+      security:
+      - BearerAuth: []
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      parameters:
+      - name: id
+        in: path
+        description: User ID
+        required: true
+        type: string
+      - name: body
+        in: body
+        description: Fields to patch
+        required: true
+        schema:
+          $ref: '#/definitions/handler.AdminPatchUserRequest'
+    delete:
+      summary: Delete user
+      responses:
+        '204':
+          description: No content
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '403':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - admin
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        description: User ID
+        required: true
+        type: string
+  /v1/admin/users/{id}/plan:
+    put:
+      summary: Set user plan
+      responses:
+        '200':
+          description: ''
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.APIResponse'
+            - type: object
+              properties:
+                data:
+                  $ref: '#/definitions/handler.AdminUserResponse'
+        '400':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '403':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      description: 'Sets billing_source to admin. Plans: free, paper, pro, pro_plus.'
+      tags:
+      - admin
+      security:
+      - BearerAuth: []
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      parameters:
+      - name: id
+        in: path
+        description: User ID
+        required: true
+        type: string
+      - name: body
+        in: body
+        description: Target plan
+        required: true
+        schema:
+          $ref: '#/definitions/handler.AdminSetPlanRequest'
+  /v1/admin/users/{id}/audit:
+    get:
+      summary: List user audit log
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/handler.APIResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '403':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - admin
+      security:
+      - BearerAuth: []
+      produces:
+      - application/json
+      parameters:
+      - name: id
+        in: path
+        description: User ID
+        required: true
+        type: string
+      - name: limit
+        in: query
+        description: Max entries (default 50)
+        required: false
+        type: int
+  /v1/admin/invites:
+    post:
+      summary: Create platform invite
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/handler.APIResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '403':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - admin
+      security:
+      - BearerAuth: []
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      parameters:
+      - name: body
+        in: body
+        description: Invite
+        required: true
+        schema:
+          $ref: '#/definitions/handler.AdminPlatformInviteRequest'
+    get:
+      summary: List platform invites
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/handler.APIResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '403':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - admin
+      security:
+      - BearerAuth: []
+      produces:
+      - application/json
+  /v1/admin/invites/{id}:
+    delete:
+      summary: Revoke platform invite
+      responses:
+        '204':
+          description: No content
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '403':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - admin
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        description: Invite ID
+        required: true
+        type: string
+  /v1/admin/settings/market-data-provider:
+    get:
+      summary: Get market data provider setting
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/handler.APIResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '403':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - admin
+      security:
+      - BearerAuth: []
+      produces:
+      - application/json
+    put:
+      summary: Set market data provider
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/handler.APIResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '403':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - admin
+      security:
+      - BearerAuth: []
+      consumes:
+      - application/json
+      produces:
+      - application/json
+  /v1/admin/settings/market-data-interval:
+    get:
+      summary: Get market data interval setting
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/handler.APIResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '403':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - admin
+      security:
+      - BearerAuth: []
+      produces:
+      - application/json
+    put:
+      summary: Set market data interval
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/handler.APIResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '403':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - admin
+      security:
+      - BearerAuth: []
+      consumes:
+      - application/json
+      produces:
+      - application/json
+  /v1/admin/fyers/status:
+    get:
+      summary: FYERS admin connection status
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/handler.APIResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '403':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - admin
+      security:
+      - BearerAuth: []
+      produces:
+      - application/json
+  /v1/admin/fyers/connect:
+    get:
+      summary: Initiate FYERS admin OAuth
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/handler.APIResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '403':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - admin
+      security:
+      - BearerAuth: []
+      produces:
+      - application/json
+  /v1/admin/fyers/callback:
+    get:
+      summary: FYERS OAuth callback
+      responses:
+        '302':
+          description: Redirect
+      description: Browser redirect from FYERS; public endpoint.
+      tags:
+      - admin
+  /v1/admin/fyers/pin:
+    put:
+      summary: Set FYERS PIN
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/handler.APIResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '403':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - admin
+      security:
+      - BearerAuth: []
+      consumes:
+      - application/json
+      produces:
+      - application/json
+  /v1/admin/market-profiles:
+    get:
+      summary: List market profiles (admin)
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/handler.APIResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '403':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - admin
+      security:
+      - BearerAuth: []
+      produces:
+      - application/json
+  /v1/admin/market-profiles/{code}:
+    patch:
+      summary: Update market profile
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/handler.APIResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '403':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - admin
+      security:
+      - BearerAuth: []
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      parameters:
+      - name: code
+        in: path
+        description: Market profile code
+        required: true
+        type: string
+  /v1/admin/instruments:
+    get:
+      summary: List instruments
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/handler.APIResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '403':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - admin
+      security:
+      - BearerAuth: []
+      produces:
+      - application/json
+    post:
+      summary: Create instrument
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/handler.APIResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '403':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - admin
+      security:
+      - BearerAuth: []
+      consumes:
+      - application/json
+      produces:
+      - application/json
+  /v1/admin/instruments/{id}:
+    patch:
+      summary: Update instrument
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/handler.APIResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '403':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - admin
+      security:
+      - BearerAuth: []
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      parameters:
+      - name: id
+        in: path
+        description: Instrument ID
+        required: true
+        type: string
+    delete:
+      summary: Delete instrument
+      responses:
+        '204':
+          description: No content
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '403':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - admin
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        description: Instrument ID
+        required: true
+        type: string
+  /v1/admin/settings/market-hours-enforcement:
+    get:
+      summary: Get market hours enforcement setting
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/handler.APIResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '403':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - admin
+      security:
+      - BearerAuth: []
+      produces:
+      - application/json
+    put:
+      summary: Set market hours enforcement
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/handler.APIResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '403':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - admin
+      security:
+      - BearerAuth: []
+      consumes:
+      - application/json
+      produces:
+      - application/json
+  /v1/admin/symbol-requests:
+    get:
+      summary: List symbol requests (admin queue)
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/handler.APIResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '403':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - admin
+      security:
+      - BearerAuth: []
+      produces:
+      - application/json
+  /v1/admin/symbol-requests/{id}/accept:
+    post:
+      summary: Accept symbol request
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/handler.APIResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '403':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - admin
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        description: Symbol request ID
+        required: true
+        type: string
+  /v1/admin/symbol-requests/{id}/reject:
+    post:
+      summary: Reject symbol request
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/handler.APIResponse'
+        '401':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        '403':
+          description: Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      tags:
+      - admin
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        description: Symbol request ID
+        required: true
+        type: string
+definitions:
+  handler.APIResponse:
+    type: object
+    properties:
+      data: {}
+  handler.ErrorResponse:
+    type: object
+    properties:
+      error:
+        type: string
+        example: invalid or missing token
+      error_code:
+        type: string
+        example: account_suspended
+  handler.RegisterRequest:
+    type: object
+    properties:
+      email:
+        type: string
+        example: trader@example.com
+      password:
+        type: string
+        example: SecurePass123!
+      invite_code:
+        type: string
+        example: inv_abc123
+  handler.RegisterResponse:
+    type: object
+    properties:
+      id:
+        type: string
+        example: 550e8400-e29b-41d4-a716-446655440000
+      email:
+        type: string
+        example: trader@example.com
+      email_verification_required:
+        type: boolean
+        example: true
+  handler.LoginRequest:
+    type: object
+    properties:
+      email:
+        type: string
+        example: trader@example.com
+      password:
+        type: string
+        example: SecurePass123!
+  handler.LoginResponse:
+    type: object
+    properties:
+      token:
+        type: string
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+      expires_in:
+        type: integer
+        example: 18000
+      org_id:
+        type: string
+        example: 550e8400-e29b-41d4-a716-446655440001
+      org_role:
+        type: string
+        example: owner
+  handler.VerifyEmailRequest:
+    type: object
+    properties:
+      email:
+        type: string
+        example: trader@example.com
+  handler.MeResponse:
+    type: object
+    properties:
+      id:
+        type: string
+        example: 550e8400-e29b-41d4-a716-446655440000
+      email:
+        type: string
+        example: trader@example.com
+      plan:
+        type: string
+        enum:
+        - free
+        - paper
+        - pro
+        - pro_plus
+        example: free
+      role:
+        type: string
+        enum:
+        - '"user'
+        - admin" example:"user"
+      status:
+        type: string
+        enum:
+        - '"active'
+        - suspended" example:"active"
+      email_verified:
+        type: boolean
+        example: true
+      created_at:
+        type: string
+        example: '2026-06-23T10:00:00Z'
+      has_auto_paused_items:
+        type: boolean
+        example: false
+      live_trading_allowed:
+        type: boolean
+        example: true
+      max_webhooks:
+        type: integer
+        example: 9
+      max_paper_webhooks:
+        type: integer
+        example: 8
+      max_live_webhooks:
+        type: integer
+        example: 1
+      max_broker_creds:
+        type: integer
+        example: 1
+      max_paper_accounts:
+        type: integer
+        example: 5
+      orders_per_sec:
+        type: integer
+        example: 10
+      orders_per_sec_enforced:
+        type: integer
+        example: 10
+      paper_webhooks_used:
+        type: integer
+        example: 1
+      live_webhooks_used:
+        type: integer
+        example: 0
+      paper_trades_used_this_month:
+        type: integer
+        example: 42
+      paper_trade_quota_exceeded:
+        type: boolean
+        example: false
+      max_paper_trades_per_month:
+        type: integer
+  handler.CheckoutRequest:
+    type: object
+    properties:
+      plan:
+        type: string
+        enum:
+        - paper
+        - pro
+        - pro_plus
+        example: paper
+  handler.CheckoutResponse:
+    type: object
+    properties:
+      url:
+        type: string
+        example: https://checkout.stripe.com/pay/cs_test_...
+  handler.PortalResponse:
+    type: object
+    properties:
+      url:
+        type: string
+        example: https://billing.stripe.com/session/...
+  handler.PlanOffer:
+    type: object
+    properties:
+      plan:
+        type: string
+        example: pro
+      name:
+        type: string
+        example: Pro
+      price_label:
+        type: string
+        example: ₹999/mo
+      max_paper_accounts:
+        type: integer
+        example: 5
+      max_paper_webhooks:
+        type: integer
+        example: 8
+      max_live_webhooks:
+        type: integer
+        example: 1
+      max_brokers:
+        type: integer
+        example: 1
+      max_webhooks:
+        type: integer
+        example: 9
+      max_paper_trades_per_month:
+        type: integer
+      orders_per_sec:
+        type: integer
+        example: 10
+      live_trading:
+        type: boolean
+        example: true
+      audit_logs:
+        type: boolean
+        example: true
+      multi_product_credentials:
+        type: boolean
+        example: false
+  handler.BillingCatalog:
+    type: object
+    properties:
+      billing_enabled:
+        type: boolean
+        example: true
+      plans:
+        type: array
+        items:
+          type: string
+  handler.AdminPatchUserRequest:
+    type: object
+    properties:
+      status:
+        type: string
+        enum:
+        - '"active'
+        - suspended" example:"suspended"
+      email_verified:
+        type: string
+        example: 'true'
+  handler.AdminSetPlanRequest:
+    type: object
+    properties:
+      plan:
+        type: string
+        enum:
+        - free
+        - paper
+        - pro
+        - pro_plus
+        example: free
+  handler.AdminUserResponse:
+    type: object
+    properties:
+      id:
+        type: string
+      email:
+        type: string
+      plan:
+        type: string
+      role:
+        type: string
+      status:
+        type: string
+      email_verified:
+        type: boolean
+      billing_source:
+        type: string
+      created_at:
+        type: string
+  handler.AdminPlatformInviteRequest:
+    type: object
+    properties:
+      email:
+        type: string
+        example: trader@example.com
+      note:
+        type: string
+        example: beta invite
+  handler.EnabledBrokersResponse:
+    type: object
+    properties:
+      brokers:
+        type: array
+        items:
+          type: string
+        example: paper,zerodha
+  handler.CreateCredentialRequest:
+    type: object
+    properties:
+      broker_type:
+        type: string
+        enum:
+        - zerodha
+        - angel
+        - dhan
+        - mt5_cloud
+        - mock
+        example: zerodha
+      account_label:
+        type: string
+        example: Zerodha Main
+      account_mode:
+        type: string
+        enum:
+        - live
+        example: live
+      exchange:
+        type: string
+        example: NSE
+      product:
+        type: string
+        example: MIS
+      products:
+        type: array
+        items:
+          type: string
+        example: MIS,CNC
+      algo_id:
+        type: string
+        example: ALGO12345
+      market_protection:
+        type: number
+        example: 2.0
+      raw_creds:
+        type: string
+        example: api_key:access_token
+      execution_mode:
+        type: string
+        enum:
+        - '"user_api_oauth'
+        - publisher
+        - direct_api" example:"user_api_oauth"
+  handler.CredentialResponse:
+    type: object
+    properties:
+      id:
+        type: string
+        example: 550e8400-e29b-41d4-a716-446655440003
+      user_id:
+        type: string
+      broker_type:
+        type: string
+        enum:
+        - zerodha
+        - angel
+        - dhan
+        - mt5_cloud
+        - mock
+        example: zerodha
+      account_label:
+        type: string
+        example: Zerodha Main
+      account_mode:
+        type: string
+        enum:
+        - live
+        example: live
+      exchange:
+        type: string
+        example: NSE
+      product:
+        type: string
+        example: MIS
+      order_type:
+        type: string
+        enum:
+        - '"MARKET'
+        - LIMIT" example:"MARKET"
+      status:
+        type: string
+        enum:
+        - '"active'
+        - paused" example:"active"
+      auto_paused:
+        type: boolean
+        example: false
+  handler.VerifyCredentialResponse:
+    type: object
+    properties:
+      valid:
+        type: boolean
+        example: true
+      status:
+        type: string
+        example: active
+      message:
+        type: string
+        example: credentials verified
+  handler.CreateWebhookRequest:
+    type: object
+    properties:
+      label:
+        type: string
+        example: Nifty Long Strategy
+      broker_cred_id:
+        type: string
+        example: 550e8400-e29b-41d4-a716-446655440003
+      paper_account_id:
+        type: string
+        example: 550e8400-e29b-41d4-a716-446655440010
+      symbol:
+        type: string
+        example: NIFTY
+      lot_size:
+        type: number
+        example: 1.0
+      max_risk_pct:
+        type: number
+        example: 2.0
+      sl_points:
+        type: integer
+        example: 50
+      tp_points:
+        type: integer
+        example: 100
+      default_order_type:
+        type: string
+        example: MARKET
+      allowed_actions:
+        type: array
+        items:
+          type: string
+        example: BUY,SELL,CLOSE
+      allowed_symbols:
+        type: array
+        items:
+          type: string
+      max_lot_size:
+        type: number
+        example: 5.0
+      rate_limit_per_sec:
+        type: integer
+        example: 0
+      rate_limit_per_min:
+        type: integer
+        example: 60
+      dedup_window_sec:
+        type: integer
+        example: 300
+      timezone:
+        type: string
+        example: Asia/Kolkata
+      required_comment:
+        type: string
+        example: strategy_v2
+  handler.WebhookResponse:
+    type: object
+    properties:
+      id:
+        type: string
+        example: 550e8400-e29b-41d4-a716-446655440002
+      user_id:
+        type: string
+        example: 550e8400-e29b-41d4-a716-446655440000
+      label:
+        type: string
+        example: Nifty Long Strategy
+      token:
+        type: string
+        example: 3f2504e0-4f89-11d3-9a0c-0305e82c3301
+      status:
+        type: string
+        enum:
+        - '"active'
+        - paused" example:"active"
+      broker_cred_id:
+        type: string
+      paper_account_id:
+        type: string
+      symbol:
+        type: string
+        example: NIFTY
+      lot_size:
+        type: number
+        example: 1.0
+      allowed_actions:
+        type: array
+        items:
+          type: string
+      allowed_symbols:
+        type: array
+        items:
+          type: string
+      dedup_window_sec:
+        type: integer
+        example: 300
+      rate_limit_per_sec:
+        type: integer
+        example: 0
+      rate_limit_per_min:
+        type: integer
+        example: 60
+      auto_paused:
+        type: boolean
+        example: false
+      created_at:
+        type: string
+        example: '2026-06-23T10:00:00Z'
+  handler.RotateTokenResponse:
+    type: object
+    properties:
+      token:
+        type: string
+        example: 3f2504e0-4f89-11d3-9a0c-0305e82c3302
+  handler.SignalRequest:
+    type: object
+    properties:
+      action:
+        type: string
+        enum:
+        - '"BUY'
+        - SELL
+        - CLOSE" example:"BUY"
+      symbol:
+        type: string
+        example: NIFTY
+      quantity:
+        type: number
+        example: 1.0
+      price:
+        type: number
+        example: 22500.5
+      comment:
+        type: string
+        example: strategy_v2_long
+  handler.IngestAcceptedResponse:
+    type: object
+    properties:
+      status:
+        type: string
+        example: accepted
+      request_id:
+        type: string
+        example: 550e8400-e29b-41d4-a716-446655440004
+      queued:
+        type: boolean
+        example: true
+      deduplicated:
+        type: boolean
+        example: false
+      message:
+        type: string
+        example: Webhook accepted for processing.
+  handler.IngestDedupResponse:
+    type: object
+    properties:
+      request_id:
+        type: string
+        example: 550e8400-e29b-41d4-a716-446655440004
+      queued:
+        type: boolean
+        example: false
+      deduplicated:
+        type: boolean
+        example: true
+  handler.TradeResponse:
+    type: object
+    properties:
+      id:
+        type: string
+        example: 550e8400-e29b-41d4-a716-446655440004
+      webhook_id:
+        type: string
+      symbol:
+        type: string
+        example: NIFTY
+      signal:
+        type: string
+        example: BUY
+      status:
+        type: string
+        enum:
+        - '"queued'
+        - submitted
+        - placed
+        - filled
+        - rejected
+        - cancelled" example:"filled"
+      broker_order:
+        type: string
+        example: '220613000000001'
+      fill_price:
+        type: number
+        example: 22450.25
+      algo_id:
+        type: string
+        example: ALGO12345
+      error_code:
+        type: string
+        example: algo_id_required
+      created_at:
+        type: string
+        example: '2026-06-23T10:00:00Z'
+  handler.PnLResponse:
+    type: object
+    properties:
+      total_pnl:
+        type: number
+        example: 1520.5
+      total_volume:
+        type: number
+        example: 45000.0
+      trade_count:
+        type: integer
+        example: 42
+      win_rate:
+        type: number
+        example: 0.62
+  handler.CreatePaperAccountRequest:
+    type: object
+    properties:
+      label:
+        type: string
+        example: Practice NIFTY
+      starting_balance:
+        type: number
+        example: 100000.0
+      exchange:
+        type: string
+        example: NSE
+      default_product:
+        type: string
+        example: MIS
+      market_profile:
+        type: string
+        example: indian_equity
+  handler.PaperAccountResponse:
+    type: object
+    properties:
+      id:
+        type: string
+        example: 550e8400-e29b-41d4-a716-446655440010
+      label:
+        type: string
+        example: Practice NIFTY
+      market_profile:
+        type: string
+        example: indian_equity
+      starting_balance:
+        type: number
+        example: 100000.0
+      cash_balance:
+        type: number
+        example: 98500.0
+      exchange:
+        type: string
+        example: NSE
+      default_product:
+        type: string
+        example: MIS
+      status:
+        type: string
+        enum:
+        - '"active'
+        - paused" example:"active"
+  handler.ClosePaperPositionRequest:
+    type: object
+    properties:
+      symbol:
+        type: string
+        example: NIFTY
+      product:
+        type: string
+        example: MIS
+  handler.MarketProfileResponse:
+    type: object
+    properties:
+      code:
+        type: string
+        example: indian_equity
+      name:
+        type: string
+        example: Indian Equity
+      base_currency:
+        type: string
+        example: INR
+  handler.ExecutionEventRequest:
+    type: object
+    properties:
+      request_id:
+        type: string
+        example: 550e8400-e29b-41d4-a716-446655440004
+      event:
+        type: string
+        enum:
+        - '"submitted'
+        - filled
+        - rejected
+        - cancelled" example:"filled"
+      broker_order_id:
+        type: string
+        example: '220613000000001'
+      fill_price:
+        type: number
+        example: 22450.25
+      occurred_at:
+        type: string
+        example: '2026-06-23T10:00:01Z'
+  handler.SessionUpdateRequest:
+    type: object
+    properties:
+      encrypted_creds:
+        type: string
+        example: base64-ciphertext
+  handler.TelegramSettingsRequest:
+    type: object
+    properties:
+      enabled:
+        type: string
+        example: 'true'
+      chat_id:
+        type: string
+        example: '123456789'
+      username:
+        type: string
+        example: mybot
+  handler.TelegramSettingsResponse:
+    type: object
+    properties:
+      enabled:
+        type: boolean
+        example: false
+      chat_id:
+        type: string
+      username:
+        type: string
+  handler.CreateSymbolRequest:
+    type: object
+    properties:
+      symbol:
+        type: string
+        example: BANKNIFTY
+      exchange:
+        type: string
+        example: NSE
+      note:
+        type: string
+        example: Need for weekly strategy
+  handler.AcceptInviteRequest:
+    type: object
+    properties:
+      token:
+        type: string
+        example: inv_abc123
+      password:
+        type: string
+        example: SecurePass123!
+      email:
+        type: string
+        example: trader@example.com

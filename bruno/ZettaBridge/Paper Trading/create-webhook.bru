@@ -1,0 +1,63 @@
+meta {
+  name: POST Create Webhook (Paper)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/v1/webhooks
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "label": "Paper SBIN webhook",
+    "paper_account_id": "{{paperAccountId}}",
+    "symbol": "SBIN",
+    "required_comment": "paper-secret-1"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    const data = res.getBody().data;
+    bru.setVar("paperWebhookId", data.id);
+    bru.setVar("paperWebhookToken", data.token);
+    console.log("paperWebhookId and paperWebhookToken saved");
+  }
+}
+
+docs {
+  Prerequisite: Paper Trading → create-account (`paperAccountId` set).
+
+  Exactly one of `broker_cred_id` / `paper_account_id` is required — sending both,
+  or neither, is a 400 (see Failure Modes → Paper Trading).
+  Flat cap: 1 paper-destination webhook per user, independent of `max_webhooks`
+  (which only counts live broker-credential webhooks).
+
+  `required_comment` here ("paper-secret-1") is what every ORDER_SIGNAL /
+  PRICE_UPDATE signal sent to this webhook must echo back in its `comment`
+  field (see ingest-buy.bru etc.) — same field name and mechanism as live
+  trading's `required_comment`/`comment` pair.
+}
+
+tests {
+  test("Status 201", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+  test("Webhook is routed to the paper account, not a broker credential", function() {
+    const data = res.getBody().data;
+    expect(data.paper_account_id).to.equal(bru.getVar("paperAccountId"));
+    expect(data.broker_cred_id).to.not.be.a("string");
+    expect(data.token).to.be.a("string");
+  });
+}

@@ -1,0 +1,33 @@
+meta {
+  name: Publisher - 400 invalid state
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/v1/publisher/callback?status=success&state=!!!not-valid-base64!!!
+  body: none
+  auth: none
+}
+
+tests {
+  test("Garbled state returns 400", function() {
+    expect(res.getStatus()).to.equal(400);
+    const body = res.getBody();
+    expect(body.error).to.include("invalid");
+  });
+}
+
+docs {
+  Callback with a state param that is not valid base64.
+
+  The HMAC check fails at the decoding step — server returns 400 without DB access.
+
+  Other invalid-state variants:
+  - Wrong format (not 3 pipe-separated parts) → 400 "invalid or expired state"
+  - Valid base64 but wrong HMAC → 400 "invalid or expired state"
+  - Valid HMAC but Unix expiry in the past → 400 "invalid or expired state"
+  - Valid HMAC + not expired but empty order ID → 400 "invalid or expired state"
+
+  All of these are covered by unit tests in internal/modules/publisher/handler_test.go.
+}

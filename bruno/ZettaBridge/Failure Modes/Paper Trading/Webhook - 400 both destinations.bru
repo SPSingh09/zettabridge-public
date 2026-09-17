@@ -1,0 +1,45 @@
+meta {
+  name: Webhook - 400 both destinations
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/v1/webhooks
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "symbol": "SBIN",
+    "broker_cred_id": "any-non-empty-value-triggers-this-check",
+    "paper_account_id": "{{paperAccountId}}",
+    "required_comment": "sec"
+  }
+}
+
+docs {
+  Sending both `broker_cred_id` and `paper_account_id` is rejected — a webhook
+  routes to exactly one execution destination. This check only looks at
+  presence (non-empty string), not validity, so `broker_cred_id` doesn't need
+  to reference a real credential to trigger it — no Credentials → create
+  prerequisite needed.
+}
+
+tests {
+  test("Status 400", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+  test("Error explains only one destination allowed", function() {
+    expect(res.getBody().error).to.include("only one of broker_cred_id or paper_account_id");
+  });
+}

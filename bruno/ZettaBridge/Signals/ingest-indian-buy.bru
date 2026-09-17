@@ -1,0 +1,43 @@
+meta {
+  name: POST Ingest Signal (Indian BUY)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/v1/webhook/{{indianLimitWebhookToken}}
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "action": "BUY",
+    "symbol": "RELIANCE",
+    "lot": 1,
+    "price": 2500,
+    "order_type": "LIMIT",
+    "comment": "bruno_indian"
+  }
+}
+
+docs {
+  Prerequisite: Webhooks → create-indian-limit (pro/pro_plus live credential,
+  default_order_type: LIMIT).
+
+  `price` is the LIMIT entry price — omit it to let the broker auto-price at
+  LTP ± slippage instead. `order_type` must match the webhook's configured
+  type (LIMIT here) or the request is rejected. Add `"product": "CNC"` when
+  using a multi-product Pro Plus credential — see ingest-indian-cnc.
+}
+
+tests {
+  test("Status 202 queued", function() {
+    expect(res.getStatus()).to.equal(202);
+    expect(res.getBody().queued).to.equal(true);
+  });
+}

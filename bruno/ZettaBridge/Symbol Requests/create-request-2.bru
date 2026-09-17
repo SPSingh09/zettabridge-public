@@ -1,0 +1,51 @@
+meta {
+  name: POST Create Symbol Request (2)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/v1/symbol-requests
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "market_profile_code": "indian_equity",
+    "exchange": "NSE",
+    "symbol": "BRUNOSYM2",
+    "reason": "Testing the reject path."
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("symbolRequestId2", res.getBody().data.id);
+    console.log("symbolRequestId2 saved: " + res.getBody().data.id);
+  }
+}
+
+docs {
+  A second, distinct request — this one gets rejected via Admin >
+  POST Reject Symbol Request rather than accepted/resolved.
+}
+
+tests {
+  test("Status 201", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+  test("Returns pending request", function() {
+    const d = res.getBody().data;
+    expect(d.symbol).to.equal("BRUNOSYM2");
+    expect(d.status).to.equal("pending");
+  });
+}

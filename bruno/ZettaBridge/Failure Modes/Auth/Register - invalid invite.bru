@@ -1,0 +1,39 @@
+meta {
+  name: Register — 400 invalid_invite (bad code)
+  type: http
+  seq: 51
+}
+
+post {
+  url: {{baseUrl}}/v1/auth/register
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "invite-test@example.com",
+    "password": "password123",
+    "invite_code": "inv_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  }
+}
+
+docs {
+  Requires CLOSED_REGISTRATION=true on the server.
+  A syntactically valid but non-existent / expired / already-used invite code
+  returns 400 with error_code=invalid_invite.
+  The dashboard re-shows the invite-code field on this error.
+}
+
+tests {
+  test("Status 400 (invalid invite)", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+  test("error_code is invalid_invite", function() {
+    expect(res.getBody().error_code).to.equal("invalid_invite");
+  });
+}

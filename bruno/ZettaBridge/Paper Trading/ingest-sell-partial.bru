@@ -1,0 +1,50 @@
+meta {
+  name: POST Ingest Signal (Paper SELL, partial close)
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/v1/webhook/{{paperWebhookToken}}
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+script:pre-request {
+  // The account this whole collection authenticates as (Admin/login) is
+  // free-plan (orders_per_sec: 1) — this request lands in the same
+  // wall-clock second as ingest-buy when Bruno runs the folder back-to-back
+  // with no delay, so it gets silently rejected with "rate limit exceeded
+  // (1 req/s)" without this guard. Busy-wait past the 1-second window.
+  const start = Date.now();
+  while (Date.now() - start < 1100) { /* spin */ }
+}
+
+body:json {
+  {
+    "type": "ORDER_SIGNAL",
+    "action": "SELL",
+    "quantity": 14,
+    "price": 826.5,
+    "comment": "paper-secret-1"
+  }
+}
+
+tests {
+  test("Status 202 queued", function() {
+    expect(res.getStatus()).to.equal(202);
+    expect(res.getBody().queued).to.equal(true);
+  });
+}
+
+docs {
+  Run after **ingest-buy** (BUY 10 @ 820.5). Selling 4 of the 10 partially closes the
+  long position, realizing P&L on the closed portion: (835 - 820.5) * 4 = 58.
+  
+  Check Paper Trading → positions (qty should now be 6, avg price unchanged at
+  820.5) and → pnl (realized_pnl should be 58) after this settles.
+}

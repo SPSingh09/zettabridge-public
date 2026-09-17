@@ -1,0 +1,25 @@
+meta {
+  name: POST Customer Portal
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/v1/billing/portal
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Requires existing stripe_customer_id (prior checkout). Returns hosted portal URL.
+  Cancel is immediate (no end-of-period grace) once Phase C webhooks are live.
+}
+
+tests {
+  test("Status 200, 404, or 503", function() {
+    expect([200, 404, 503]).to.include(res.getStatus());
+  });
+}

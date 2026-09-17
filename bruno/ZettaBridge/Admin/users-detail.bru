@@ -1,0 +1,42 @@
+meta {
+  name: GET User Detail
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/v1/admin/users/{{targetUserId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+script:pre-request {
+  const envId = bru.getEnvVar("targetUserId");
+  if (envId) bru.setVar("targetUserId", envId);
+  const id = bru.getVar("targetUserId");
+  if (!id || id.includes("{{")) {
+    throw new Error("targetUserId is not set. Run Admin > GET List Users or set it in the environment.");
+  }
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("Returns single user object", function() {
+    const data = res.getBody().data;
+    expect(data.id).to.equal(bru.getVar("targetUserId"));
+    expect(data.email).to.be.a("string");
+    expect(data.webhook_count).to.be.a("number");
+    expect(data.broker_count).to.be.a("number");
+  });
+}
+
+docs {
+  Prerequisite: run Admin > GET List Users (auto-saves {{targetUserId}})
+  or Admin > POST Admin Login (saves admin's own id).
+}
