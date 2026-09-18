@@ -6,6 +6,8 @@ Built solo, end to end: Go backend, Next.js dashboard, AWS infrastructure, obser
 
 > **Status: archived.** This ran on AWS from January to June 2026 and has been shut down — the infrastructure is no longer deployed and the hosted dashboard is offline. The code and Terraform definitions are complete and reproducible.
 
+Dependency vulnerability alerts on this repository are predominantly in the frontend dependency tree. The project is archived and the Next.js major version has not been upgraded. Go dependencies and toolchain are current; govulncheck reports no reachable vulnerabilities in the backend.
+
 **~33,000 lines of Go** (44,800 including tests) · 79 test files · 60 Terraform resource blocks · 4 broker integrations
 
 ---
